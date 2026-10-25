@@ -1,0 +1,32 @@
+[
+  {
+    "text": "Service: 1 Person pro 30 geplante Gäste pro Schicht, aufgerundet. Mindestbesetzung 1.",
+    "source": "personalregeln.md",
+    "section": "P-01 Service"
+  },
+  {
+    "text": "Küche: 1 Person pro 40 geplante Gäste pro Schicht, aufgerundet. Mindestbesetzung Morgen 2 (Mise en place), Nachmittag 1.",
+    "source": "personalregeln.md",
+    "section": "P-02 Küche"
+  },
+  {
+    "text": "Küche Morgen plant für den ganzen Tag vor: max(2, aufrunden(Tagesgäste / 40)).",
+    "source": "personalregeln.md",
+    "section": "P-03 Küche Morgen"
+  },
+  {
+    "text": "Abwasch: 1 Person bis 99 Gäste, 2 Personen ab 100 Gästen pro Schicht.",
+    "source": "personalregeln.md",
+    "section": "P-04 Abwasch"
+  },
+  {
+    "text": "Eine Schicht dauert höchstens 6 Stunden (Morgen 08–14, Nachmittag 14–20). Platzhalter, Helin ersetzt durch echte Hausregel mit Quelle.",
+    "source": "personalregeln.md",
+    "section": "P-05 Schichtdauer"
+  },
+  {
+    "text": "Anlässe ab 20 Personen mindestens 3 Tage im Voraus melden. Platzhalter, Helin ersetzt durch echte Regel.",
+    "source": "anlaesse.md",
+    "section": "A-01 Vorlaufzeit"
+  }
+]

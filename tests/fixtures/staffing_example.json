@@ -1,0 +1,164 @@
+[
+  {
+    "date": "2026-10-26",
+    "shift": "morgen",
+    "guests_planned": 45,
+    "kueche": 2,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-26",
+    "shift": "nachmittag",
+    "guests_planned": 26,
+    "kueche": 1,
+    "service": 1,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-27",
+    "shift": "morgen",
+    "guests_planned": 45,
+    "kueche": 2,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-27",
+    "shift": "nachmittag",
+    "guests_planned": 26,
+    "kueche": 1,
+    "service": 1,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-28",
+    "shift": "morgen",
+    "guests_planned": 52,
+    "kueche": 3,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-28",
+    "shift": "nachmittag",
+    "guests_planned": 31,
+    "kueche": 1,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-29",
+    "shift": "morgen",
+    "guests_planned": 55,
+    "kueche": 3,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-29",
+    "shift": "nachmittag",
+    "guests_planned": 33,
+    "kueche": 1,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-30",
+    "shift": "morgen",
+    "guests_planned": 65,
+    "kueche": 3,
+    "service": 3,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-30",
+    "shift": "nachmittag",
+    "guests_planned": 40,
+    "kueche": 1,
+    "service": 2,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-31",
+    "shift": "morgen",
+    "guests_planned": 80,
+    "kueche": 4,
+    "service": 3,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04"
+    ]
+  },
+  {
+    "date": "2026-10-31",
+    "shift": "nachmittag",
+    "guests_planned": 61,
+    "kueche": 2,
+    "service": 3,
+    "abwasch": 1,
+    "rule_refs": [
+      "P-01",
+      "P-02",
+      "P-04"
+    ]
+  }
+]
