@@ -1,0 +1,182 @@
+[
+  {
+    "date": "2026-10-26",
+    "shift": "morgen",
+    "guests": 38,
+    "lower": 31,
+    "upper": 45,
+    "assumptions": {
+      "temp_max": 13.8,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 0
+    }
+  },
+  {
+    "date": "2026-10-26",
+    "shift": "nachmittag",
+    "guests": 22,
+    "lower": 18,
+    "upper": 26,
+    "assumptions": {
+      "temp_max": 13.8,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 0
+    }
+  },
+  {
+    "date": "2026-10-27",
+    "shift": "morgen",
+    "guests": 38,
+    "lower": 31,
+    "upper": 45,
+    "assumptions": {
+      "temp_max": 11.2,
+      "rain_mm": 6.4,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 1
+    }
+  },
+  {
+    "date": "2026-10-27",
+    "shift": "nachmittag",
+    "guests": 22,
+    "lower": 18,
+    "upper": 26,
+    "assumptions": {
+      "temp_max": 11.2,
+      "rain_mm": 6.4,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 1
+    }
+  },
+  {
+    "date": "2026-10-28",
+    "shift": "morgen",
+    "guests": 44,
+    "lower": 36,
+    "upper": 52,
+    "assumptions": {
+      "temp_max": 9.6,
+      "rain_mm": 2.1,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 2
+    }
+  },
+  {
+    "date": "2026-10-28",
+    "shift": "nachmittag",
+    "guests": 26,
+    "lower": 21,
+    "upper": 31,
+    "assumptions": {
+      "temp_max": 9.6,
+      "rain_mm": 2.1,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 2
+    }
+  },
+  {
+    "date": "2026-10-29",
+    "shift": "morgen",
+    "guests": 47,
+    "lower": 39,
+    "upper": 55,
+    "assumptions": {
+      "temp_max": 12.4,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 3
+    }
+  },
+  {
+    "date": "2026-10-29",
+    "shift": "nachmittag",
+    "guests": 28,
+    "lower": 23,
+    "upper": 33,
+    "assumptions": {
+      "temp_max": 12.4,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 3
+    }
+  },
+  {
+    "date": "2026-10-30",
+    "shift": "morgen",
+    "guests": 55,
+    "lower": 45,
+    "upper": 65,
+    "assumptions": {
+      "temp_max": 14.1,
+      "rain_mm": 0.3,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 4
+    }
+  },
+  {
+    "date": "2026-10-30",
+    "shift": "nachmittag",
+    "guests": 34,
+    "lower": 28,
+    "upper": 40,
+    "assumptions": {
+      "temp_max": 14.1,
+      "rain_mm": 0.3,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 4
+    }
+  },
+  {
+    "date": "2026-10-31",
+    "shift": "morgen",
+    "guests": 68,
+    "lower": 56,
+    "upper": 80,
+    "assumptions": {
+      "temp_max": 15.0,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 5
+    }
+  },
+  {
+    "date": "2026-10-31",
+    "shift": "nachmittag",
+    "guests": 52,
+    "lower": 43,
+    "upper": 61,
+    "assumptions": {
+      "temp_max": 15.0,
+      "rain_mm": 0.0,
+      "is_holiday": false,
+      "is_bridge_day": false,
+      "is_school_holiday": false,
+      "weekday": 5
+    }
+  }
+]

@@ -1,0 +1,56 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	guard(guard)
+	reject(reject)
+	supervisor(supervisor)
+	regelfrage(regelfrage)
+	anlass(anlass)
+	anlass_rueckfrage(anlass_rueckfrage)
+	context(context)
+	forecast(forecast)
+	plausibility(plausibility)
+	staffing(staffing)
+	explain(explain)
+	approval(approval)
+	memory(memory)
+	commit(commit)
+	escalate(escalate)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> guard;
+	anlass -.-> anlass_rueckfrage;
+	anlass -.-> context;
+	anlass -.-> escalate;
+	anlass_rueckfrage --> anlass;
+	approval -. &nbsp;end&nbsp; .-> __end__;
+	approval -.-> commit;
+	approval -.-> escalate;
+	approval -.-> memory;
+	context -.-> escalate;
+	context -. &nbsp;ok&nbsp; .-> forecast;
+	explain --> approval;
+	forecast -.-> escalate;
+	forecast -. &nbsp;ok&nbsp; .-> plausibility;
+	guard -.-> reject;
+	guard -.-> supervisor;
+	memory -.-> approval;
+	memory -.-> staffing;
+	plausibility -.-> context;
+	plausibility -.-> escalate;
+	plausibility -.-> staffing;
+	staffing --> explain;
+	supervisor -.-> anlass;
+	supervisor -.-> context;
+	supervisor -.-> regelfrage;
+	supervisor -.-> reject;
+	commit --> __end__;
+	escalate --> __end__;
+	regelfrage --> __end__;
+	reject --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

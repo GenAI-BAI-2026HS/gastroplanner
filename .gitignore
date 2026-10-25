@@ -1,0 +1,19 @@
+# Geheimnisse
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Laufzeitdaten
+data/checkpoints.db*
+data/chroma/
+forecast/models/*.pkl
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
