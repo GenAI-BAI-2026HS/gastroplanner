@@ -1,0 +1,482 @@
+[
+ {
+  "date": "2026-08-31",
+  "shift": "morgen",
+  "guests": 35
+ },
+ {
+  "date": "2026-08-31",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-09-01",
+  "shift": "morgen",
+  "guests": 38
+ },
+ {
+  "date": "2026-09-01",
+  "shift": "nachmittag",
+  "guests": 19
+ },
+ {
+  "date": "2026-09-02",
+  "shift": "morgen",
+  "guests": 43
+ },
+ {
+  "date": "2026-09-02",
+  "shift": "nachmittag",
+  "guests": 24
+ },
+ {
+  "date": "2026-09-03",
+  "shift": "morgen",
+  "guests": 41
+ },
+ {
+  "date": "2026-09-03",
+  "shift": "nachmittag",
+  "guests": 27
+ },
+ {
+  "date": "2026-09-04",
+  "shift": "morgen",
+  "guests": 47
+ },
+ {
+  "date": "2026-09-04",
+  "shift": "nachmittag",
+  "guests": 33
+ },
+ {
+  "date": "2026-09-05",
+  "shift": "morgen",
+  "guests": 59
+ },
+ {
+  "date": "2026-09-05",
+  "shift": "nachmittag",
+  "guests": 45
+ },
+ {
+  "date": "2026-09-07",
+  "shift": "morgen",
+  "guests": 36
+ },
+ {
+  "date": "2026-09-07",
+  "shift": "nachmittag",
+  "guests": 23
+ },
+ {
+  "date": "2026-09-08",
+  "shift": "morgen",
+  "guests": 33
+ },
+ {
+  "date": "2026-09-08",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-09-09",
+  "shift": "morgen",
+  "guests": 44
+ },
+ {
+  "date": "2026-09-09",
+  "shift": "nachmittag",
+  "guests": 28
+ },
+ {
+  "date": "2026-09-10",
+  "shift": "morgen",
+  "guests": 47
+ },
+ {
+  "date": "2026-09-10",
+  "shift": "nachmittag",
+  "guests": 27
+ },
+ {
+  "date": "2026-09-11",
+  "shift": "morgen",
+  "guests": 60
+ },
+ {
+  "date": "2026-09-11",
+  "shift": "nachmittag",
+  "guests": 29
+ },
+ {
+  "date": "2026-09-12",
+  "shift": "morgen",
+  "guests": 72
+ },
+ {
+  "date": "2026-09-12",
+  "shift": "nachmittag",
+  "guests": 48
+ },
+ {
+  "date": "2026-09-14",
+  "shift": "morgen",
+  "guests": 34
+ },
+ {
+  "date": "2026-09-14",
+  "shift": "nachmittag",
+  "guests": 19
+ },
+ {
+  "date": "2026-09-15",
+  "shift": "morgen",
+  "guests": 35
+ },
+ {
+  "date": "2026-09-15",
+  "shift": "nachmittag",
+  "guests": 23
+ },
+ {
+  "date": "2026-09-16",
+  "shift": "morgen",
+  "guests": 39
+ },
+ {
+  "date": "2026-09-16",
+  "shift": "nachmittag",
+  "guests": 26
+ },
+ {
+  "date": "2026-09-17",
+  "shift": "morgen",
+  "guests": 47
+ },
+ {
+  "date": "2026-09-17",
+  "shift": "nachmittag",
+  "guests": 26
+ },
+ {
+  "date": "2026-09-18",
+  "shift": "morgen",
+  "guests": 54
+ },
+ {
+  "date": "2026-09-18",
+  "shift": "nachmittag",
+  "guests": 29
+ },
+ {
+  "date": "2026-09-19",
+  "shift": "morgen",
+  "guests": 59
+ },
+ {
+  "date": "2026-09-19",
+  "shift": "nachmittag",
+  "guests": 47
+ },
+ {
+  "date": "2026-09-21",
+  "shift": "morgen",
+  "guests": 39
+ },
+ {
+  "date": "2026-09-21",
+  "shift": "nachmittag",
+  "guests": 21
+ },
+ {
+  "date": "2026-09-22",
+  "shift": "morgen",
+  "guests": 35
+ },
+ {
+  "date": "2026-09-22",
+  "shift": "nachmittag",
+  "guests": 22
+ },
+ {
+  "date": "2026-09-23",
+  "shift": "morgen",
+  "guests": 42
+ },
+ {
+  "date": "2026-09-23",
+  "shift": "nachmittag",
+  "guests": 24
+ },
+ {
+  "date": "2026-09-24",
+  "shift": "morgen",
+  "guests": 49
+ },
+ {
+  "date": "2026-09-24",
+  "shift": "nachmittag",
+  "guests": 29
+ },
+ {
+  "date": "2026-09-25",
+  "shift": "morgen",
+  "guests": 50
+ },
+ {
+  "date": "2026-09-25",
+  "shift": "nachmittag",
+  "guests": 34
+ },
+ {
+  "date": "2026-09-26",
+  "shift": "morgen",
+  "guests": 67
+ },
+ {
+  "date": "2026-09-26",
+  "shift": "nachmittag",
+  "guests": 56
+ },
+ {
+  "date": "2026-09-28",
+  "shift": "morgen",
+  "guests": 39
+ },
+ {
+  "date": "2026-09-28",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-09-29",
+  "shift": "morgen",
+  "guests": 42
+ },
+ {
+  "date": "2026-09-29",
+  "shift": "nachmittag",
+  "guests": 19
+ },
+ {
+  "date": "2026-09-30",
+  "shift": "morgen",
+  "guests": 42
+ },
+ {
+  "date": "2026-09-30",
+  "shift": "nachmittag",
+  "guests": 27
+ },
+ {
+  "date": "2026-10-01",
+  "shift": "morgen",
+  "guests": 42
+ },
+ {
+  "date": "2026-10-01",
+  "shift": "nachmittag",
+  "guests": 27
+ },
+ {
+  "date": "2026-10-02",
+  "shift": "morgen",
+  "guests": 47
+ },
+ {
+  "date": "2026-10-02",
+  "shift": "nachmittag",
+  "guests": 35
+ },
+ {
+  "date": "2026-10-03",
+  "shift": "morgen",
+  "guests": 71
+ },
+ {
+  "date": "2026-10-03",
+  "shift": "nachmittag",
+  "guests": 52
+ },
+ {
+  "date": "2026-10-05",
+  "shift": "morgen",
+  "guests": 41
+ },
+ {
+  "date": "2026-10-05",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-10-06",
+  "shift": "morgen",
+  "guests": 39
+ },
+ {
+  "date": "2026-10-06",
+  "shift": "nachmittag",
+  "guests": 22
+ },
+ {
+  "date": "2026-10-07",
+  "shift": "morgen",
+  "guests": 44
+ },
+ {
+  "date": "2026-10-07",
+  "shift": "nachmittag",
+  "guests": 25
+ },
+ {
+  "date": "2026-10-08",
+  "shift": "morgen",
+  "guests": 50
+ },
+ {
+  "date": "2026-10-08",
+  "shift": "nachmittag",
+  "guests": 30
+ },
+ {
+  "date": "2026-10-09",
+  "shift": "morgen",
+  "guests": 53
+ },
+ {
+  "date": "2026-10-09",
+  "shift": "nachmittag",
+  "guests": 35
+ },
+ {
+  "date": "2026-10-10",
+  "shift": "morgen",
+  "guests": 59
+ },
+ {
+  "date": "2026-10-10",
+  "shift": "nachmittag",
+  "guests": 53
+ },
+ {
+  "date": "2026-10-12",
+  "shift": "morgen",
+  "guests": 38
+ },
+ {
+  "date": "2026-10-12",
+  "shift": "nachmittag",
+  "guests": 24
+ },
+ {
+  "date": "2026-10-13",
+  "shift": "morgen",
+  "guests": 40
+ },
+ {
+  "date": "2026-10-13",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-10-14",
+  "shift": "morgen",
+  "guests": 42
+ },
+ {
+  "date": "2026-10-14",
+  "shift": "nachmittag",
+  "guests": 26
+ },
+ {
+  "date": "2026-10-15",
+  "shift": "morgen",
+  "guests": 40
+ },
+ {
+  "date": "2026-10-15",
+  "shift": "nachmittag",
+  "guests": 27
+ },
+ {
+  "date": "2026-10-16",
+  "shift": "morgen",
+  "guests": 49
+ },
+ {
+  "date": "2026-10-16",
+  "shift": "nachmittag",
+  "guests": 30
+ },
+ {
+  "date": "2026-10-17",
+  "shift": "morgen",
+  "guests": 59
+ },
+ {
+  "date": "2026-10-17",
+  "shift": "nachmittag",
+  "guests": 54
+ },
+ {
+  "date": "2026-10-19",
+  "shift": "morgen",
+  "guests": 34
+ },
+ {
+  "date": "2026-10-19",
+  "shift": "nachmittag",
+  "guests": 20
+ },
+ {
+  "date": "2026-10-20",
+  "shift": "morgen",
+  "guests": 36
+ },
+ {
+  "date": "2026-10-20",
+  "shift": "nachmittag",
+  "guests": 23
+ },
+ {
+  "date": "2026-10-21",
+  "shift": "morgen",
+  "guests": 38
+ },
+ {
+  "date": "2026-10-21",
+  "shift": "nachmittag",
+  "guests": 25
+ },
+ {
+  "date": "2026-10-22",
+  "shift": "morgen",
+  "guests": 46
+ },
+ {
+  "date": "2026-10-22",
+  "shift": "nachmittag",
+  "guests": 30
+ },
+ {
+  "date": "2026-10-23",
+  "shift": "morgen",
+  "guests": 58
+ },
+ {
+  "date": "2026-10-23",
+  "shift": "nachmittag",
+  "guests": 36
+ },
+ {
+  "date": "2026-10-24",
+  "shift": "morgen",
+  "guests": 63
+ },
+ {
+  "date": "2026-10-24",
+  "shift": "nachmittag",
+  "guests": 50
+ }
+]

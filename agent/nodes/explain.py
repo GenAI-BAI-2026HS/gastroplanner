@@ -34,6 +34,8 @@ def explain(state):
     regeln = _regeln_zum_plan(state["staffing"], state.get("events", []))
     prompt = EXPLAIN_PROMPT.format(
         plan=json.dumps(state["staffing"], ensure_ascii=False),
+        prognosequelle=(f"Ersatzprognose Wochentagsmittel ({state['fallback_grund']})"
+                        if state.get("fallback_grund") else "Regression"),
         annahmen=json.dumps(_annahmen(state.get("forecast")), ensure_ascii=False),
         anlaesse=json.dumps(state.get("events", []), ensure_ascii=False),
         korrekturen=json.dumps(state.get("corrections", []), ensure_ascii=False),

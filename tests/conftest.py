@@ -6,7 +6,7 @@ from langchain_core.messages import AIMessage
 
 import config
 from agent import backends, llm
-from agent.nodes import anlass, supervisor
+from agent.nodes import anlass, planung, supervisor
 
 HEUTE = date(2026, 10, 25)   # Sonntag → nächster Montag = 2026-10-26 (Woche der Fixtures)
 
@@ -43,11 +43,12 @@ class FakeLLM:
 
 @pytest.fixture(autouse=True)
 def isolated(monkeypatch, tmp_path):
-    """Jeder Test: Fixture-Modus, festes Datum, eigene DB, leeres Memory."""
+    """Jeder Test: Fixture-Modus, festes Datum, eigene DB, leeres Memory, kein Warten."""
     monkeypatch.setenv("USE_FIXTURES", "1")
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "restaurant.db")
     monkeypatch.setattr(supervisor, "heute", lambda: HEUTE)
     monkeypatch.setattr(anlass, "heute", lambda: HEUTE)
+    monkeypatch.setattr(planung, "WARTEZEIT_S", 0)          # Wiederholungen ohne Warten
     backends._fixture_corrections.clear()
     yield
     llm.set_llm(None)

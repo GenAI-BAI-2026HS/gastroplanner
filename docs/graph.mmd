@@ -14,11 +14,13 @@ graph TD;
 	context(context)
 	forecast(forecast)
 	plausibility(plausibility)
+	fallback(fallback)
 	staffing(staffing)
 	explain(explain)
 	approval(approval)
-	memory(memory)
+	korrektur(korrektur)
 	commit(commit)
+	memory(memory)
 	escalate(escalate)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> guard;
@@ -29,26 +31,29 @@ graph TD;
 	approval -. &nbsp;end&nbsp; .-> __end__;
 	approval -.-> commit;
 	approval -.-> escalate;
-	approval -.-> memory;
+	approval -.-> korrektur;
+	commit --> memory;
 	context -.-> escalate;
 	context -. &nbsp;ok&nbsp; .-> forecast;
 	explain --> approval;
+	fallback -.-> escalate;
+	fallback -. &nbsp;ok&nbsp; .-> plausibility;
 	forecast -.-> escalate;
 	forecast -. &nbsp;ok&nbsp; .-> plausibility;
 	guard -.-> reject;
 	guard -.-> supervisor;
-	memory -.-> approval;
-	memory -.-> staffing;
-	plausibility -.-> context;
+	korrektur -.-> approval;
+	korrektur -.-> staffing;
 	plausibility -.-> escalate;
+	plausibility -.-> fallback;
 	plausibility -.-> staffing;
 	staffing --> explain;
 	supervisor -.-> anlass;
 	supervisor -.-> context;
 	supervisor -.-> regelfrage;
 	supervisor -.-> reject;
-	commit --> __end__;
 	escalate --> __end__;
+	memory --> __end__;
 	regelfrage --> __end__;
 	reject --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

@@ -1,7 +1,8 @@
 """Human-in-the-Loop: Freigabe und Übermittlung. Owner: Person B (B5).
 
 approval enthält nur den interrupt und die Prüfung der Antwort. Gespeichert wird
-ausschliesslich in commit; so wird ohne Freigabe technisch nichts übernommen.
+ausschliesslich nach «freigeben»: der Plan in commit, offene Korrekturen danach in memory.
+So wird ohne Freigabe technisch nichts übernommen.
 
 Fortsetzen: graph.invoke(Command(resume={"decision": "freigeben" | "anpassen" | "ablehnen",
                                          "feedback": "..."}), config)
@@ -19,7 +20,9 @@ def approval(state):
         "typ": "freigabe",
         "plan": state["staffing"],
         "erklaerung": state["explanation"],
-        "hinweis": state.get("hinweis"),
+        "hinweis": state.get("hinweis"),                          # Rückfrage aus korrektur
+        "korrekturen_offen": state.get("pending_corrections", []),  # werden bei Freigabe gespeichert
+        "fallback_grund": state.get("fallback_grund"),            # gesetzt = Wochentagsmittel
     })
     antwort = antwort if isinstance(antwort, dict) else {"decision": str(antwort)}
     decision = antwort.get("decision")

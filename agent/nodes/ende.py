@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage
 def escalate(state):
     grund = state.get("escalation")
     if not grund and state.get("plausibility") and not state["plausibility"]["ok"]:
-        grund = "Prognose auch nach Wiederholung unplausibel: " + "; ".join(
+        grund = "Prognose unplausibel, auch die Ersatzprognose (Wochentagsmittel): " + "; ".join(
             state["plausibility"]["issues"])
     if not grund and state.get("decision") == "anpassen":
         grund = "Zu viele Anpassungsrunden ohne Freigabe."
