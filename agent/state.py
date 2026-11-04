@@ -17,9 +17,9 @@ class AgentState(TypedDict):
     context: dict | None           # {"weather": [...], "calendar": [...]}
     forecast: list[dict] | None
     plausibility: dict | None      # {"ok": bool, "issues": [...]}
-    retries: int
+    retries: int                   # Wiederholungen bei Datenfehlern (context, forecast)
     events: list[dict]
-    corrections: list[dict]
+    corrections: list[dict]        # in staffing angewendet: gespeicherte + offene Korrekturen
     staffing: list[dict] | None
     rule_sources: list[dict]
     explanation: str | None
@@ -29,8 +29,10 @@ class AgentState(TypedDict):
     allowed: bool | None           # Ergebnis guard
     pending_event: dict | None     # unvollständiger Anlass während der Rückfrage
     anlass_versuche: int           # Anzahl Rückfragen beim Anlass
+    fallback_grund: str | None     # gesetzt, wenn die Ersatzprognose (Wochentagsmittel) gilt
     feedback: str | None           # Freitext bei «anpassen»
-    hinweis: str | None            # Rückfrage von memory, wird in approval angezeigt
+    pending_corrections: list[dict]  # Korrekturen dieses Laufs, erst nach Freigabe gespeichert
+    hinweis: str | None            # Rückfrage von korrektur, wird in approval angezeigt
     revisions: int                 # Anzahl «anpassen»-Runden
     escalation: str | None         # Grund für Eskalation an den Menschen
     plan_id: str | None            # gesetzt von commit
@@ -47,6 +49,7 @@ def initial_state(user_text: str) -> dict:
         "intent": None, "start_date": None, "context": None, "forecast": None,
         "plausibility": None, "retries": 0, "events": [], "corrections": [],
         "staffing": None, "rule_sources": [], "explanation": None, "decision": None,
-        "allowed": None, "pending_event": None, "anlass_versuche": 0, "feedback": None,
+        "allowed": None, "pending_event": None, "anlass_versuche": 0,
+        "fallback_grund": None, "feedback": None, "pending_corrections": [],
         "hinweis": None, "revisions": 0, "escalation": None, "plan_id": None,
     }

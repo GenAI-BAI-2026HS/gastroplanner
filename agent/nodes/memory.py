@@ -1,8 +1,20 @@
-"""Korrektur der Betriebsleitung merken (Langzeit-Memory). Owner: Helin (C5).
+"""Korrekturen der Betriebsleitung (Langzeit-Memory). Owner: Helin (C5).
 
-Bei «anpassen» wird das Feedback strukturiert extrahiert und gespeichert; danach
-rechnet staffing neu. Ist das Feedback unklar, geht eine Rückfrage über `hinweis`
-zurück an approval (kein zweiter interrupt hier, siehe agent/nodes/anlass.py).
+Lesen und Schreiben sind getrennt, damit nur freigegebene Korrekturen gespeichert werden:
+
+    approval ─anpassen─▶ korrektur ─klar─▶ staffing ─▶ explain ─▶ approval
+                             │                 ▲ liest gespeicherte + offene Korrekturen
+                             └─unklar─▶ approval (Rückfrage über `hinweis`, nichts gespeichert)
+    approval ─freigeben─▶ commit ─▶ memory ─▶ END   (erst hier wird gespeichert)
+    approval ─ablehnen──▶ END                        (offene Korrekturen verfallen)
+
+- korrektur: wandelt das Feedback mit with_structured_output(Korrektur) um und legt es
+  in `pending_corrections` ab. Schreibt nichts in die Datenbank.
+- memory: läuft nach commit und speichert die offenen Korrekturen dauerhaft.
+
+Die Rückfrage bei unklarem Feedback geht an approval zurück, weil dort der einzige
+interrupt sitzt: Die Person sieht den Plan und die Frage und antwortet mit «anpassen»
+und präziserem Feedback (kein zweiter interrupt hier, siehe agent/nodes/anlass.py).
 
 Kurzzeit-Memory = Checkpointer (gilt pro Thread).
 Langzeit-Memory = Tabelle corrections (gilt über alle Läufe).
@@ -15,18 +27,29 @@ from agent import backends, llm
 from agent.prompts import KORREKTUR_PROMPT
 from agent.schemas import Korrektur
 
+STANDARD_RUECKFRAGE = ("Bitte präzisieren Sie: Wochentag, Schicht, Rolle und wie viele "
+                       "Personen mehr oder weniger?")
 
-def memory(state):
+
+def korrektur(state):
+    """Feedback → strukturierte Korrektur. Nur im State, noch nicht gespeichert."""
     extraktor = llm.get_llm().with_structured_output(Korrektur)
     k = extraktor.invoke([SystemMessage(KORREKTUR_PROMPT.format(
         plan=json.dumps(state["staffing"], ensure_ascii=False),
         feedback=state.get("feedback") or "",
     ))])
+    revisions = state.get("revisions", 0) + 1
     vollstaendig = None not in (k.weekday, k.shift, k.role, k.delta)
     if not (k.eindeutig and vollstaendig):
-        return {"hinweis": k.rueckfrage or "Bitte präzisieren Sie: Wochentag, Schicht, Rolle "
-                                           "und wie viele Personen mehr oder weniger?",
-                "revisions": state.get("revisions", 0) + 1}
-    backends.save_correction(k.weekday, k.shift, k.role, k.delta,
-                             k.note or state.get("feedback") or "")
-    return {"hinweis": None, "revisions": state.get("revisions", 0) + 1}
+        return {"hinweis": k.rueckfrage or STANDARD_RUECKFRAGE, "revisions": revisions}
+    neu = {"weekday": k.weekday, "shift": k.shift, "role": k.role, "delta": k.delta,
+           "note": k.note or state.get("feedback") or ""}
+    return {"pending_corrections": [*state.get("pending_corrections", []), neu],
+            "hinweis": None, "revisions": revisions}
+
+
+def memory(state):
+    """Nach der Freigabe: offene Korrekturen dauerhaft speichern."""
+    for c in state.get("pending_corrections", []):
+        backends.save_correction(c["weekday"], c["shift"], c["role"], c["delta"], c["note"])
+    return {"pending_corrections": []}

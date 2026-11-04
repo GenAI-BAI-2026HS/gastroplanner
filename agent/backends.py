@@ -47,6 +47,25 @@ def forecast_guests(start_date: str, days: int) -> list[dict]:
     return real(start_date, days)
 
 
+def get_history(start_date: str) -> list[dict]:
+    """Gäste pro Tag und Schicht vor dem Startdatum (Tabelle history, A2)."""
+    if use_fixtures():
+        return _fixture("history_example")
+    import sqlite3
+    with sqlite3.connect(config.DB_PATH) as con:
+        rows = con.execute("SELECT date, shift, guests FROM history WHERE date < ?",
+                           (start_date,)).fetchall()
+    return [{"date": d, "shift": s, "guests": g} for d, s, g in rows]
+
+
+def weekday_mean_forecast(start_date: str, days: int,
+                          open_dates: list[str] | None = None) -> list[dict]:
+    """Ersatzprognose aus dem Wochentagsmittel (Fallback bei unplausibler Regression)."""
+    from forecast.baseline import weekday_mean_forecast as baseline
+    start = "2026-10-26" if use_fixtures() else start_date      # Fixtures gelten ab 26.10.
+    return baseline(get_history(start), start, days, open_dates)
+
+
 def check_plausibility(forecast: list[dict], start_date: str, days: int) -> dict:
     if use_fixtures():
         return {"ok": bool(forecast), "issues": [] if forecast else ["Prognose ist leer"]}
@@ -58,10 +77,25 @@ def check_plausibility(forecast: list[dict], start_date: str, days: int) -> dict
 def calculate_staffing(forecast: list[dict], events: list[dict],
                        corrections: list[dict]) -> list[dict]:
     if use_fixtures():
-        # Fixture berücksichtigt Anlässe und Korrekturen nicht; das macht erst C2.
-        return [dict(row) for row in _fixture("staffing_example")]
+        # Fixture berücksichtigt keine Anlässe; das macht erst C2. Korrekturen werden
+        # vereinfacht angewendet (nie unter die Mindestbesetzung), damit die Memory-Schleife
+        # im Fixture-Modus sichtbar wirkt.
+        return _apply_corrections([dict(row) for row in _fixture("staffing_example")],
+                                  corrections)
     from planning.staffing import calculate_staffing as real
     return real(forecast, events, corrections)
+
+
+def _apply_corrections(plan: list[dict], corrections: list[dict]) -> list[dict]:
+    from datetime import date
+    minimum = {"kueche": lambda s: config.MIN_KUECHE[s], "service": lambda s: config.MIN_SERVICE,
+               "abwasch": lambda s: config.MIN_ABWASCH}
+    for row in plan:
+        weekday = date.fromisoformat(row["date"]).weekday()
+        for c in corrections:
+            if c["weekday"] == weekday and c["shift"] == row["shift"] and c["role"] in minimum:
+                row[c["role"]] = max(minimum[c["role"]](row["shift"]), row[c["role"]] + c["delta"])
+    return plan
 
 
 # --- Wissen (C3) ----------------------------------------------------------------

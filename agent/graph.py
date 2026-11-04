@@ -26,11 +26,13 @@ def build_graph(checkpointer=None):
     b.add_node("context", planung.context)                 # Tool (MCP)
     b.add_node("forecast", planung.forecast)               # Tool, A
     b.add_node("plausibility", planung.plausibility)       # Regeln, A
+    b.add_node("fallback", planung.fallback)               # Wochentagsmittel, A
     b.add_node("staffing", planung.staffing)               # Tool, Helin
     b.add_node("explain", explain.explain)                 # LLM + RAG, B
     b.add_node("approval", approval.approval)              # Mensch, B
-    b.add_node("memory", memory.memory)                    # LLM, Helin
+    b.add_node("korrektur", memory.korrektur)              # LLM, Helin (nur extrahieren)
     b.add_node("commit", approval.commit)                  # Tool, B
+    b.add_node("memory", memory.memory)                    # Tool, Helin (speichern nach Freigabe)
     b.add_node("escalate", ende.escalate)
 
     # --- Kanten ----------------------------------------------------------------
@@ -46,14 +48,17 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("forecast", r.route_after_step,
                             {"ok": "plausibility", "escalate": "escalate"})
     b.add_conditional_edges("plausibility", r.route_after_plausibility,
-                            ["staffing", "context", "escalate"])
+                            ["staffing", "fallback", "escalate"])
+    b.add_conditional_edges("fallback", r.route_after_step,
+                            {"ok": "plausibility", "escalate": "escalate"})
     b.add_edge("staffing", "explain")
     b.add_edge("explain", "approval")
     b.add_conditional_edges("approval", r.route_after_approval,
-                            {"commit": "commit", "memory": "memory",
+                            {"commit": "commit", "korrektur": "korrektur",
                              "escalate": "escalate", "end": END})
-    b.add_conditional_edges("memory", r.route_after_memory, ["staffing", "approval"])
-    for end_node in ("regelfrage", "reject", "escalate", "commit"):
+    b.add_conditional_edges("korrektur", r.route_after_korrektur, ["staffing", "approval"])
+    b.add_edge("commit", "memory")                         # Korrekturen erst nach Freigabe speichern
+    for end_node in ("regelfrage", "reject", "escalate", "memory"):
         b.add_edge(end_node, END)
 
     return b.compile(checkpointer=checkpointer)

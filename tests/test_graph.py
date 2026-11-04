@@ -75,22 +75,58 @@ def test_unbekannte_antwort_gilt_als_ablehnung(fake_llm, run):
 
 
 # --- Anpassen und Memory (C5) --------------------------------------------------
-def test_anpassen_speichert_korrektur_und_fragt_erneut(fake_llm, run):
-    k = Korrektur(eindeutig=True, weekday=4, shift="nachmittag", role="service", delta=1,
-                  note="Freitag Nachmittag ein Service mehr")
-    fake = fake_llm(Guard=OK, Route=WOCHE, Korrektur=k)
-    graph, cfg, _ = run("Plane die Woche")
+FREITAG_SERVICE = Korrektur(eindeutig=True, weekday=4, shift="nachmittag", role="service", delta=1,
+                            note="Freitag Nachmittag ein Service mehr")
+GESPEICHERT = [{"weekday": 4, "shift": "nachmittag", "role": "service", "delta": 1,
+                "note": "Freitag Nachmittag ein Service mehr"}]
+
+
+def service_freitag_nachmittag(plan):
+    return next(r["service"] for r in plan if r["date"] == "2026-10-30" and r["shift"] == "nachmittag")
+
+
+def test_anpassen_rechnet_neu_speichert_aber_erst_nach_freigabe(fake_llm, run):
+    fake = fake_llm(Guard=OK, Route=WOCHE, Korrektur=FREITAG_SERVICE)
+    graph, cfg, result = run("Plane die Woche")
+    vorher = service_freitag_nachmittag(interrupt_value(result)["plan"])
+
     result = graph.invoke(Command(resume={"decision": "anpassen",
                                           "feedback": "Freitag Nachmittag immer einen Service mehr"}), cfg)
-
-    assert interrupt_value(result)["typ"] == "freigabe"        # neue Freigabe nötig
-    assert backends.get_corrections() == [{"weekday": 4, "shift": "nachmittag", "role": "service",
-                                           "delta": 1, "note": "Freitag Nachmittag ein Service mehr"}]
-    assert graph.get_state(cfg).values["corrections"]          # staffing hat sie geladen
+    payload = interrupt_value(result)
+    assert payload["typ"] == "freigabe"                        # neue Freigabe nötig
+    assert service_freitag_nachmittag(payload["plan"]) == vorher + 1   # staffing hat sie gelesen
+    assert payload["korrekturen_offen"] == GESPEICHERT         # sichtbar für die Person
+    assert backends.get_corrections() == []                    # aber noch NICHT gespeichert
     assert fake.count("text") == 2                             # explain lief zweimal
 
     result = graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
     assert count_approved_rows() == 12
+    assert backends.get_corrections() == GESPEICHERT           # erst nach Freigabe gespeichert
+    assert result["pending_corrections"] == []
+    assert "freigegeben" in result["messages"][-1].content
+
+
+def test_anpassen_dann_ablehnen_speichert_keine_korrektur(fake_llm, run):
+    fake_llm(Guard=OK, Route=WOCHE, Korrektur=FREITAG_SERVICE)
+    graph, cfg, _ = run("Plane die Woche")
+    graph.invoke(Command(resume={"decision": "anpassen", "feedback": "Freitag Nachmittag +1 Service"}), cfg)
+    graph.invoke(Command(resume={"decision": "ablehnen"}), cfg)
+
+    assert backends.get_corrections() == []
+    assert count_approved_rows() == 0
+
+
+def test_freigegebene_korrektur_gilt_im_naechsten_lauf(fake_llm, run):
+    fake_llm(Guard=OK, Route=WOCHE, Korrektur=FREITAG_SERVICE)
+    graph, cfg, result = run("Plane die Woche")
+    vorher = service_freitag_nachmittag(interrupt_value(result)["plan"])
+    graph.invoke(Command(resume={"decision": "anpassen", "feedback": "Freitag Nachmittag +1 Service"}), cfg)
+    graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+
+    _, _, result = run("Plane die Woche")                      # neuer Thread
+    payload = interrupt_value(result)
+    assert service_freitag_nachmittag(payload["plan"]) == vorher + 1
+    assert payload["korrekturen_offen"] == []                  # kommt jetzt aus dem Speicher
 
 
 def test_unklares_feedback_fuehrt_zu_rueckfrage(fake_llm, run):
@@ -198,21 +234,86 @@ def test_wetter_api_weg_eskaliert(fake_llm, run, monkeypatch):
 
     monkeypatch.setattr(backends, "get_weather", kaputt)
     _, _, result = run("Plane die Woche")
+    assert "nach 3 Versuchen" in result["messages"][-1].content
     assert "Open-Meteo nicht erreichbar" in result["messages"][-1].content
     assert result["forecast"] is None                          # nichts erfunden
 
 
-def test_unplausible_prognose_wiederholt_zweimal_und_eskaliert(fake_llm, run, monkeypatch):
+def test_wetter_api_kurz_weg_wird_wiederholt(fake_llm, run, monkeypatch):
     fake_llm(Guard=OK, Route=WOCHE)
     aufrufe = []
     original = backends.get_weather
-    monkeypatch.setattr(backends, "get_weather", lambda *a: aufrufe.append(a) or original(*a))
+
+    def wackelig(*a):
+        aufrufe.append(a)
+        if len(aufrufe) < 3:
+            raise TimeoutError("Open-Meteo antwortet nicht")
+        return original(*a)
+
+    monkeypatch.setattr(backends, "get_weather", wackelig)
+    graph, cfg, result = run("Plane die Woche")
+    assert interrupt_value(result)["typ"] == "freigabe"
+    assert len(aufrufe) == 3                                   # 1 Versuch + 2 Wiederholungen
+    assert graph.get_state(cfg).values["retries"] == 2
+
+
+def test_programmfehler_wird_nicht_wiederholt(fake_llm, run, monkeypatch):
+    fake_llm(Guard=OK, Route=WOCHE)
+    aufrufe = []
+
+    def bug(*a):
+        aufrufe.append(a)
+        raise ValueError("falsches Datumsformat")
+
+    monkeypatch.setattr(backends, "get_weather", bug)
+    _, _, result = run("Plane die Woche")
+    assert len(aufrufe) == 1                                   # Wiederholen bringt nichts
+    assert "falsches Datumsformat" in result["messages"][-1].content
+
+
+def _nur_ersatzprognose_plausibel(forecast, *_):
+    if all(f["assumptions"].get("fallback") == "wochentagsmittel" for f in forecast):
+        return {"ok": True, "issues": []}
+    return {"ok": False, "issues": ["2026-10-31 morgen: 900 Gäste über Kapazität"]}
+
+
+def test_unplausible_prognose_nutzt_wochentagsmittel(fake_llm, run, monkeypatch):
+    fake_llm(Guard=OK, Route=WOCHE)
+    aufrufe = []
+    original = backends.forecast_guests
+    monkeypatch.setattr(backends, "forecast_guests", lambda *a: aufrufe.append(a) or original(*a))
+    monkeypatch.setattr(backends, "check_plausibility", _nur_ersatzprognose_plausibel)
+    graph, cfg, result = run("Plane die Woche")
+
+    payload = interrupt_value(result)
+    assert payload["typ"] == "freigabe"                        # trotzdem ein Plan zur Freigabe
+    assert "900 Gäste" in payload["fallback_grund"]            # Person sieht, warum
+    assert len(aufrufe) == 1                                   # Regression NICHT wiederholt
+    values = graph.get_state(cfg).values
+    assert len(values["forecast"]) == 12                       # Mo–Sa × 2 Schichten
+    assert all(f["assumptions"]["fallback"] == "wochentagsmittel" for f in values["forecast"])
+    assert all(f["lower"] <= f["guests"] <= f["upper"] for f in values["forecast"])
+
+
+def test_auch_ersatzprognose_unplausibel_eskaliert(fake_llm, run, monkeypatch):
+    fake_llm(Guard=OK, Route=WOCHE)
+    pruefungen = []
     monkeypatch.setattr(backends, "check_plausibility",
-                        lambda *_: {"ok": False, "issues": ["2026-10-28 nachmittag fehlt"]})
+                        lambda *_: pruefungen.append(1) or {"ok": False, "issues": ["2026-10-28 nachmittag fehlt"]})
     _, _, result = run("Plane die Woche")
 
-    assert len(aufrufe) == 3                                   # 1 Versuch + 2 Wiederholungen
+    assert len(pruefungen) == 2                                # Regression + Ersatz, dann Schluss
+    assert "Wochentagsmittel" in result["messages"][-1].content
     assert "2026-10-28 nachmittag fehlt" in result["messages"][-1].content
+    assert count_approved_rows() == 0
+
+
+def test_ersatzprognose_ohne_historie_eskaliert(fake_llm, run, monkeypatch):
+    fake_llm(Guard=OK, Route=WOCHE)
+    monkeypatch.setattr(backends, "check_plausibility", lambda *_: {"ok": False, "issues": ["Ausreisser"]})
+    monkeypatch.setattr(backends, "get_history", lambda *_: [])
+    _, _, result = run("Plane die Woche")
+    assert "Zu wenig Historie" in result["messages"][-1].content
 
 
 def test_neue_anfrage_im_selben_thread_setzt_laufzeitfelder_zurueck(fake_llm, run):

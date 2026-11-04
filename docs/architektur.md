@@ -4,7 +4,7 @@ Bezug: Projektplan Abschnitte 4–5, Aufgaben B4–B6, C3–C5 · Folien SW5 (Gr
 
 ## Grundprinzip
 
-Das LLM rechnet nie selbst. Gästezahlen und Besetzung kommen aus Funktionen; das LLM versteht die Anfrage, wählt den Pfad, erfasst Anlässe aus Freitext, fragt nach und erklärt. Im Graphen ist das sichtbar: Die Planungskette `context → forecast → plausibility → staffing` enthält kein LLM.
+Das LLM rechnet nie selbst. Gästezahlen und Besetzung kommen aus Funktionen; das LLM versteht die Anfrage, wählt den Pfad, erfasst Anlässe aus Freitext, fragt nach und erklärt. Im Graphen ist das sichtbar: Die Planungskette `context → forecast → plausibility (→ fallback) → staffing` enthält kein LLM.
 
 ## Organisation des Codes
 
@@ -41,19 +41,22 @@ flowchart TD
     forecast -- ok --> plausibility
     forecast -- Fehler --> escalate
     plausibility -- ok --> staffing
-    plausibility -- "Fehler, retries ≤ 2" --> context
-    plausibility -- "Fehler, retries > 2" --> escalate
+    plausibility -- unplausibel --> fallback
+    plausibility -- "auch Ersatz unplausibel" --> escalate
+    fallback -- Wochentagsmittel --> plausibility
+    fallback -- "zu wenig Historie" --> escalate
     staffing --> explain --> approval
     approval -- freigeben --> commit
-    approval -- anpassen --> memory
+    approval -- anpassen --> korrektur
     approval -- "anpassen, > 3 Runden" --> escalate
     approval -- ablehnen --> END
-    memory -- Korrektur gespeichert --> staffing
-    memory -- unklar --> approval
+    korrektur -- "klar (offen, nicht gespeichert)" --> staffing
+    korrektur -- "unklar: Rückfrage" --> approval
+    commit --> memory
+    memory -- "offene Korrekturen speichern" --> END
     regelfrage --> END((END))
     reject --> END
     escalate --> END
-    commit --> END
 ```
 
 Automatisch erzeugt: `python -m agent.run --mermaid` schreibt `docs/graph.mmd`, `--png` schreibt `docs/graph.png`.
@@ -64,13 +67,13 @@ Automatisch erzeugt: `python -m agent.run --mermaid` schreibt `docs/graph.mmd`, 
 | supervisor | LLM (strukturiert) | B | `nodes/supervisor.py` |
 | regelfrage | LLM + RAG | Helin | `nodes/regelfrage.py` |
 | anlass, anlass_rueckfrage | LLM (strukturiert), Mensch | B | `nodes/anlass.py` |
-| context, forecast, plausibility, staffing | Tool, Regeln | B (ruft A, Helin) | `nodes/planung.py` |
+| context, forecast, plausibility, fallback, staffing | Tool, Regeln | B (ruft A, Helin) | `nodes/planung.py` |
 | explain | LLM + RAG | B | `nodes/explain.py` |
 | approval, commit | Mensch, Tool | B | `nodes/approval.py` |
-| memory | LLM (strukturiert) | Helin | `nodes/memory.py` |
+| korrektur, memory | LLM (strukturiert), Tool | Helin | `nodes/memory.py` |
 | escalate | Text | B | `nodes/ende.py` |
 
-Gegenüber der Node-Tabelle im Projektplan neu: `reject` (gemeinsames Ende für guard und `themenfremd`), `anlass_rueckfrage` (eigener Node für den interrupt) und `escalate` als eigener Node.
+Gegenüber der Node-Tabelle im Projektplan neu: `reject` (gemeinsames Ende für guard und `themenfremd`), `anlass_rueckfrage` (eigener Node für den interrupt) und `escalate` als eigener Node. Seit dem Review-Feedback ausserdem `fallback` (Wochentagsmittel statt Wiederholung) und die Trennung von `korrektur` (extrahieren) und `memory` (speichern nach der Freigabe).
 
 ## State
 
@@ -80,10 +83,13 @@ Basis ist der Vertrag aus Abschnitt 5. Ergänzt wurden Felder, die die Router br
 |---|---|---|
 | `allowed` | guard | `route_after_guard` |
 | `pending_event`, `anlass_versuche` | anlass, anlass_rueckfrage | `route_after_anlass` |
-| `feedback` | approval | memory |
-| `hinweis` | memory | approval (Anzeige), `route_after_memory` |
-| `revisions` | memory | `route_after_approval` |
-| `escalation` | context, forecast, anlass, escalate | `route_after_step`, `route_after_anlass` |
+| `retries` | context, forecast (Wiederholungen bei Datenfehlern) | Trace, Tests |
+| `fallback_grund` | forecast (zurücksetzen), fallback | `route_after_plausibility`, explain, approval (Anzeige) |
+| `feedback` | approval | korrektur |
+| `pending_corrections` | korrektur (anhängen), memory (leeren) | staffing, approval (Anzeige), memory |
+| `hinweis` | korrektur | approval (Anzeige), `route_after_korrektur` |
+| `revisions` | korrektur | `route_after_approval` |
+| `escalation` | context, forecast, fallback, anlass, escalate | `route_after_step`, `route_after_anlass` |
 | `plan_id` | commit | App |
 
 `initial_state()` setzt pro neuer Anfrage alle Laufzeitfelder zurück, weil der Checkpointer den State eines Threads behält. Nur der Nachrichtenverlauf wächst weiter.
@@ -92,7 +98,11 @@ Basis ist der Vertrag aus Abschnitt 5. Ergänzt wurden Felder, die die Router br
 
 **Conditional Edges statt `Command(goto=...)`.** Die Ziele stehen explizit in `graph.py`, deshalb zeichnet `draw_mermaid()` alle Pfeile. Mit `Command` müsste man die Ziele zusätzlich annotieren.
 
-**Mensch-Nodes enthalten nur den interrupt.** Beim Fortsetzen mit `Command(resume=...)` führt LangGraph den unterbrochenen Node von der ersten Zeile an erneut aus. Deshalb sind LLM-Extraktion (`anlass`) und Rückfrage (`anlass_rueckfrage`) getrennt, ebenso Freigabe (`approval`) und Speichern (`commit`). Die Rückfrage von `memory` läuft über `hinweis` zurück in `approval`.
+**Mensch-Nodes enthalten nur den interrupt.** Beim Fortsetzen mit `Command(resume=...)` führt LangGraph den unterbrochenen Node von der ersten Zeile an erneut aus. Deshalb sind LLM-Extraktion (`anlass`) und Rückfrage (`anlass_rueckfrage`) getrennt, ebenso Freigabe (`approval`) und Speichern (`commit`). Die Rückfrage von `korrektur` läuft über `hinweis` zurück in `approval`.
+
+**Korrekturen: lesen in `staffing`, schreiben nach der Freigabe.** Bei «anpassen» extrahiert `korrektur` das Feedback und legt es nur in `pending_corrections` ab. `staffing` ist die einzige Stelle, die Korrekturen liest: gespeicherte aus der Datenbank plus die offenen dieses Laufs. Die Person sieht den neu gerechneten Plan und die offenen Korrekturen in der Freigabe. Gespeichert wird erst im `memory`-Node nach `commit`. Bei «ablehnen» verfallen offene Korrekturen. So landet nie eine Korrektur im Langzeit-Memory, die zu einem verworfenen Plan gehört. Ist das Feedback unklar, geht eine Rückfrage über `hinweis` zurück an `approval`, weil dort der einzige interrupt sitzt; gespeichert wird dabei nichts.
+
+**Wiederholen nur bei Datenfehlern, Fallback bei unplausibler Prognose.** Die Regression ist deterministisch: Derselbe Input liefert dasselbe Ergebnis, eine Wiederholung bringt nichts. Wiederholt wird deshalb nur, wo der Fehler ausserhalb unseres Codes liegt: `context` und `forecast` versuchen es bei Verbindungsfehlern, Timeouts und MCP-Fehlern bis zu dreimal mit wachsender Wartezeit (`planung.mit_wiederholung`), danach Eskalation. Programmfehler (z. B. `ValueError`) werden nicht wiederholt. Ist die Prognose unplausibel, rechnet `fallback` eine Ersatzprognose aus dem Mittel derselben Wochentage und Schicht der letzten 8 Wochen (`forecast/baseline.py`, gleiche Logik wie die Baseline im Backtest A4). Sie wird erneut geprüft; ist auch sie unplausibel, wird eskaliert. Die Schleife läuft also höchstens einmal. Erklärung und Freigabe nennen den Grund für den Fallback.
 
 **Graph synchron, MCP gekapselt.** Die MCP-Tools aus `langchain-mcp-adapters` sind nur asynchron aufrufbar. `agent/mcp_client.py` kapselt den Aufruf mit `asyncio.run`, damit Streamlit, `SqliteSaver` und pytest synchron bleiben. Pro Aufruf startet der Server kurz als Subprozess (zwei Aufrufe pro Lauf).
 
@@ -107,7 +117,8 @@ Basis ist der Vertrag aus Abschnitt 5. Ergänzt wurden Felder, die die Router br
 ## Grenzen (bekannt)
 
 - **Wetter und Kalender werden doppelt abgerufen.** `forecast_guests` ruft sie laut Vertrag intern selbst ab, der `context`-Node zusätzlich über MCP.
-- **Im Fixture-Modus wirken Anlässe und Korrekturen nicht auf die Besetzung.** Das leistet erst `calculate_staffing` (C2).
+- **Im Fixture-Modus wirken Anlässe nicht auf die Besetzung, Korrekturen nur vereinfacht** (`backends._apply_corrections`, nie unter Mindestbesetzung). Die echte Logik leistet erst `calculate_staffing` (C2).
+- **Die Ersatzprognose braucht die Tabelle `history`** (A2). Fehlt sie oder hat sie zu wenig Werte, eskaliert der Graph.
 - **Der Fixture-Modus ignoriert das Startdatum.** Die Beispieldaten gelten für die Woche ab 26.10.2026.
 - **Der explain-Node hat keine Tools.** Die Idee aus B3, dort Wetterfragen über MCP zu beantworten, wäre eine Ausbaustufe.
 
@@ -116,4 +127,4 @@ Basis ist der Vertrag aus Abschnitt 5. Ergänzt wurden Felder, die die Router br
 | Art | Umsetzung | Gültigkeit |
 |---|---|---|
 | Kurzzeit | Checkpointer (`InMemorySaver` in Tests/CLI, `SqliteSaver` in der App) | ein Thread |
-| Langzeit | Tabelle `corrections` über `tools/memory.py` | alle Läufe |
+| Langzeit | Tabelle `corrections` über `tools/memory.py`; gelesen in `staffing`, geschrieben in `memory` nach der Freigabe | alle Läufe |

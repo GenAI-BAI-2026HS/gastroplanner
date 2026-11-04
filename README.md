@@ -70,6 +70,7 @@ Die Funktionen aus Projektplan Abschnitt 5 existieren als Stubs mit Docstring un
 | `get_weather`, `get_calendar` | `tools/weather.py`, `tools/calendar_ch.py` | B | Stub |
 | `forecast_guests` | `forecast/predict.py` | A | Stub |
 | `check_plausibility` | `forecast/checks.py` | A | Stub |
+| `weekday_mean_forecast` (Fallback, auch als Baseline für A4 nutzbar) | `forecast/baseline.py` | A (eingebaut von B) | fertig, braucht Tabelle `history` |
 | `calculate_staffing` | `planning/staffing.py` | Helin | Stub |
 | `search_rules` | `tools/rag.py` | Helin | Stub |
 | `save_correction`, `get_corrections` | `tools/memory.py` | Helin | Stub |

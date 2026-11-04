@@ -27,7 +27,11 @@ def ask_human(payload: dict):
     """Fragt im Terminal nach und liefert den Wert für Command(resume=...)."""
     if payload["typ"] == "freigabe":
         print("\n" + (payload["erklaerung"] or ""))
+        if payload.get("fallback_grund"):
+            print(f"\nErsatzprognose (Wochentagsmittel): {payload['fallback_grund']}")
         print_plan(payload["plan"])
+        for k in payload.get("korrekturen_offen") or []:
+            print(f"Korrektur (wird bei Freigabe gespeichert): {k['note']}")
         if payload.get("hinweis"):
             print("\nRückfrage:", payload["hinweis"])
         decision = input("\nfreigeben / anpassen / ablehnen: ").strip().lower()
