@@ -23,6 +23,7 @@ import json
 
 from langchain_core.messages import SystemMessage
 
+import config
 from agent import backends, llm
 from agent.prompts import KORREKTUR_PROMPT
 from agent.schemas import Korrektur
@@ -40,7 +41,10 @@ def korrektur(state):
     ))])
     revisions = state.get("revisions", 0) + 1
     vollstaendig = None not in (k.weekday, k.shift, k.role, k.delta)
-    if not (k.eindeutig and vollstaendig):
+    # Ruhetag oder «0 Personen» würde beim Speichern nach der Freigabe scheitern
+    # (tools/memory.py prüft das). Deshalb schon hier als unklar behandeln und nachfragen.
+    gueltig = vollstaendig and k.weekday in config.OPEN_WEEKDAYS and k.delta != 0
+    if not (k.eindeutig and gueltig):
         return {"hinweis": k.rueckfrage or STANDARD_RUECKFRAGE, "revisions": revisions}
     neu = {"weekday": k.weekday, "shift": k.shift, "role": k.role, "delta": k.delta,
            "note": k.note or state.get("feedback") or ""}
