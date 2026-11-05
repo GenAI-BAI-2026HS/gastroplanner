@@ -23,27 +23,25 @@ wiederfinden; sie sind Annahmen und gehören in die Limitationen:
 Kalender: Feiertage aus holidays.Switzerland(subdiv="SO"), Schulferien aus
 data/school_holidays.csv, Brückentag = Werktag zwischen Feiertag und Wochenende
 (Freitag nach einem Donnerstag-Feiertag oder Montag vor einem Dienstag-Feiertag).
-get_calendar (B2) muss dieselben Definitionen verwenden, sonst passen Training und Prognose
-nicht zusammen: am einfachsten die Funktionen is_bridge_day und load_school_holidays
-von hier übernehmen.
+Diese Definitionen stehen in tools/calendar_ch.py und werden hier importiert. So rechnen
+Training (diese Daten) und Prognose (get_calendar) garantiert mit denselben Merkmalen.
 """
 import argparse
-import csv
 import sqlite3
 import sys
 from datetime import date, timedelta
 from math import cos, pi
 from pathlib import Path
 
-import holidays
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config  # noqa: E402
+from tools.calendar_ch import (  # noqa: E402
+    SCHOOL_HOLIDAYS_CSV, is_bridge_day, is_school_holiday, load_school_holidays, public_holidays)
 
 START, END = date(2024, 10, 1), date(2026, 10, 18)
 SEED = 42
-SCHOOL_HOLIDAYS_CSV = config.ROOT / "data" / "school_holidays.csv"
 
 BASE = {"morgen": {"werktag": 45, "samstag": 30},
         "nachmittag": {"werktag": 15, "samstag": 25}}
@@ -66,25 +64,6 @@ CREATE TABLE history (
 """
 COLUMNS = ("date", "weekday", "shift", "guests", "temp_max", "rain_mm", "is_holiday",
            "is_bridge_day", "is_school_holiday", "month")
-
-
-def load_school_holidays(path: Path | str = SCHOOL_HOLIDAYS_CSV) -> list[tuple[date, date, str]]:
-    """Schulferien als (start, end, name); end ist der letzte Ferientag."""
-    with open(path, encoding="utf-8") as f:
-        return [(date.fromisoformat(r["start"]), date.fromisoformat(r["end"]), r["name"])
-                for r in csv.DictReader(f)]
-
-
-def is_school_holiday(d: date, ferien: list[tuple[date, date, str]]) -> bool:
-    return any(start <= d <= end for start, end, _ in ferien)
-
-
-def is_bridge_day(d: date, feiertage) -> bool:
-    """Freitag nach einem Donnerstag-Feiertag oder Montag vor einem Dienstag-Feiertag."""
-    if d in feiertage:
-        return False
-    return ((d.weekday() == 4 and d - timedelta(days=1) in feiertage) or
-            (d.weekday() == 0 and d + timedelta(days=1) in feiertage))
 
 
 def simulate_weather(d: date, rng: np.random.Generator) -> tuple[float, float]:
@@ -120,7 +99,7 @@ def guests_for(shift: str, d: date, temp: float, rain_mm: float, holiday: bool,
 def generate_rows(start: date = START, end: date = END, seed: int = SEED,
                   ferien_csv: Path | str = SCHOOL_HOLIDAYS_CSV) -> list[dict]:
     rng = np.random.default_rng(seed)
-    feiertage = holidays.Switzerland(subdiv=config.CANTON, years=range(start.year, end.year + 2))
+    feiertage = public_holidays(start.year, end.year + 1)
     ferien = load_school_holidays(ferien_csv)
     rows = []
     d = start

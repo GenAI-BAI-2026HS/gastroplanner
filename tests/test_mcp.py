@@ -21,7 +21,16 @@ def test_fehlertext_wird_zur_exception():
 
 
 @pytest.mark.mcp
-def test_server_meldet_fehlende_umsetzung_als_fehler():
-    """Startet mcp_server/server.py. Solange B2 fehlt, muss ein klarer Fehler kommen."""
-    with pytest.raises(MCPToolError, match="get_weather"):
-        call_mcp_tool("get_weather", {"start_date": "2026-10-26", "days": 7})
+def test_kalender_ueber_mcp():
+    """Startet mcp_server/server.py und ruft get_calendar über MCP auf (ohne Netzwerk)."""
+    tage = call_mcp_tool("get_calendar", {"start_date": "2026-10-26", "days": 7})
+    assert [t["date"] for t in tage] == [f"2026-{d}" for d in
+                                         ("10-26", "10-27", "10-28", "10-29", "10-30", "10-31", "11-01")]
+    assert tage[-1]["is_open"] is False
+
+
+@pytest.mark.mcp
+def test_fehler_im_tool_wird_zur_exception():
+    """Ein Fehler im Server darf nicht als Daten weiterlaufen, sondern muss eskalieren."""
+    with pytest.raises(MCPToolError, match="get_calendar"):
+        call_mcp_tool("get_calendar", {"start_date": "kein-datum", "days": 7})
