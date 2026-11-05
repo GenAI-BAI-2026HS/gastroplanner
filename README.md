@@ -45,7 +45,7 @@ gastroplanner/
 │  ├─ mcp_client.py          #   MCP-Server per stdio
 │  ├─ run.py                 #   Kommandozeile
 │  └─ nodes/                 #   ein Modul pro Owner (guard, memory, regelfrage: Helin)
-├─ forecast/                 # predict.py, checks.py                              (A)
+├─ forecast/                 # train.py, predict.py, checks.py, baseline.py       (A)
 ├─ planning/staffing.py      # calculate_staffing                                 (Helin)
 ├─ tools/
 │  ├─ weather.py, calendar_ch.py                                                  (B)
@@ -54,7 +54,7 @@ gastroplanner/
 ├─ mcp_server/server.py      # FastMCP: Wetter + Kalender                         (B)
 ├─ docs_rag/                 # Regeldokumente für RAG                             (Helin)
 ├─ eval/                     # Backtest (A), Agenten-Evaluation (Helin)
-├─ data/                     # restaurant.db, checkpoints.db (nicht committet)
+├─ data/                     # generate.py, school_holidays.csv, restaurant.db     (A)
 ├─ tests/                    # pytest + fixtures/*.json
 ├─ docs/                     # Architektur, Modellwahl, Graph-Bild
 ├─ daten/, Skizze/           # Material aus dem früheren Konzept (siehe unten)
@@ -63,21 +63,23 @@ gastroplanner/
 
 ## Stand der Vertragsfunktionen
 
-Die Funktionen aus Projektplan Abschnitt 5 existieren als Stubs mit Docstring und werfen `NotImplementedError`, bis die Owner sie umsetzen.
+Noch offene Funktionen aus Projektplan Abschnitt 5 existieren als Stubs mit Docstring und werfen `NotImplementedError`, bis die Owner sie umsetzen.
 
 | Funktion | Datei | Owner | Stand |
 |---|---|---|---|
 | `get_weather`, `get_calendar` | `tools/weather.py`, `tools/calendar_ch.py` | B | Stub |
 | `forecast_guests` | `forecast/predict.py` | A | Stub |
 | `check_plausibility` | `forecast/checks.py` | A | Stub |
-| `weekday_mean_forecast` (Fallback, auch als Baseline für A4 nutzbar) | `forecast/baseline.py` | A (eingebaut von B) | fertig, braucht Tabelle `history` |
-| `calculate_staffing` | `planning/staffing.py` | Helin | Stub |
+| Testdaten (Tabelle `history`) | `data/generate.py`, `data/school_holidays.csv` | A | fertig, siehe [data/readme.md](data/readme.md) |
+| Training, `load_models` (trainiert selbst, wenn `.pkl` fehlt) | `forecast/train.py` | A | fertig |
+| `weekday_mean_forecast` (Fallback, auch als Baseline für A4 nutzbar) | `forecast/baseline.py` | A (eingebaut von B) | fertig |
+| `calculate_staffing` | `planning/staffing.py` | Helin | fertig |
 | `search_rules` | `tools/rag.py` | Helin | Stub |
-| `save_correction`, `get_corrections` | `tools/memory.py` | Helin | Stub |
+| `save_correction`, `get_corrections` | `tools/memory.py` | Helin | fertig |
 | `save_approved_plan` | `tools/plans.py` | B | fertig |
 | MCP-Server | `mcp_server/server.py` | B | fertig (ruft die Stubs auf) |
 | LangGraph-Orchestrator | `agent/` | B | Gerüst fertig, läuft mit Fixtures |
 
 ## Früheres Konzept
 
-`daten/` (Testdaten-Generator mit Mittagsgeschäft, Mo–Fr, Kanton Zürich, Einkauf) und `Skizze/` (Mehragentensystem mit Einkaufsplanung) stammen aus dem Konzept vor dem Projektplan vom 19.10.2026. Der Projektplan legt zwei Schichten (morgen, nachmittag), Mo–Sa, Olten (Kanton SO) und nur Personalplanung fest. Person A entscheidet in A2, was aus `daten/make_testdata.py` übernommen wird; `config.DB_PATH` zeigt auf `data/restaurant.db`.
+`daten/` (Testdaten-Generator mit Mittagsgeschäft, Mo–Fr, Kanton Zürich, Einkauf) und `Skizze/` (Mehragentensystem mit Einkaufsplanung) stammen aus dem Konzept vor dem Projektplan vom 19.10.2026. Der Projektplan legt zwei Schichten (morgen, nachmittag), Mo–Sa, Olten (Kanton SO) und nur Personalplanung fest. Die Testdaten nach Projektplan erzeugt `data/generate.py`; `config.DB_PATH` zeigt auf `data/restaurant.db`. `daten/` wird nicht mehr verwendet.

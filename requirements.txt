@@ -17,6 +17,7 @@ holidays
 statsmodels
 pandas
 numpy
+matplotlib
 
 # RAG
 langchain-chroma
