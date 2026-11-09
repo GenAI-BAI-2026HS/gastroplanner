@@ -92,10 +92,17 @@ def tokenize(text: str) -> list[str]:
 
 
 def _stamm(wort: str) -> str:
-    if len(wort) > 5 and not re.fullmatch(r"[a-z]-\d+", wort):
-        for endung in ("ungen", "en", "er", "es", "e", "n", "s"):
-            if wort.endswith(endung):
-                return wort[: -len(endung)]
+    """Sehr einfache Wortkürzung: gleicher Stamm für Gäste/Gästen, Pause/Pausen, morgens/Morgen.
+
+    Eine Endung wird nur entfernt, wenn mindestens vier Buchstaben übrig bleiben.
+    """
+    if re.fullmatch(r"[a-z]-\d+", wort):
+        return wort
+    if len(wort) > 5 and wort.endswith("s") and not wort.endswith(("es", "ss")):
+        wort = wort[:-1]                               # morgens → morgen
+    for endung in ("ungen", "en", "er", "es", "e", "n", "s"):
+        if wort.endswith(endung) and len(wort) - len(endung) >= 4:
+            return wort[: -len(endung)]
     return wort
 
 
