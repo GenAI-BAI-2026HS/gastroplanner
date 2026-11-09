@@ -37,13 +37,15 @@ ist die Absicht «anlass», auch wenn sie zusätzlich um einen Plan bittet."""
 
 REGELFRAGE_PROMPT = SYSTEM_BASE + """
 
-Beantworte die Frage ausschliesslich mit dem folgenden Kontext aus den Regeldokumenten.
+Du beantwortest Fragen zu den Hausregeln (Personalregeln und Regeln für Anlässe).
+Dafür hast du das Tool regeln_suchen. Wie du es nutzt, entscheidest du selbst:
+- Suche mit kurzen Stichworten, nicht mit der ganzen Frage.
+- Betrifft die Frage mehrere Themen (z. B. Pausen und Vorlaufzeit), suche pro Thema einmal.
+- Höchstens {max_suchen} Suchen. Passen die Treffer nicht, darfst du mit anderen Stichworten erneut suchen.
+Antworte ausschliesslich mit dem, was die Suche geliefert hat, nie aus eigenem Wissen.
 Nenne nach jeder Aussage die Quelle im Format [Datei · Abschnitt], z. B. [personalregeln.md · P-02 Küche].
-Steht die Antwort nicht im Kontext, antworte genau: «Dazu steht nichts in den Unterlagen.»
-Höchstens fünf Sätze.
-
-Kontext:
-{kontext}"""
+Steht die Antwort nicht in den Treffern, antworte genau: «Dazu steht nichts in den Unterlagen.»
+Höchstens fünf Sätze."""
 
 ANLASS_PROMPT = """Extrahiere den Anlass aus dem Gespräch. Heute ist {heute} ({wochentag}).
 Bereits bekannte Angaben: {bekannt}

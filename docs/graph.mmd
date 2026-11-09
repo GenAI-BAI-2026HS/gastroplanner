@@ -9,6 +9,7 @@ graph TD;
 	reject(reject)
 	supervisor(supervisor)
 	regelfrage(regelfrage)
+	regel_tools(regel_tools<hr/><small><em>__tools = regeln_suchen</em></small>)
 	anlass(anlass)
 	anlass_rueckfrage(anlass_rueckfrage)
 	context(context)
@@ -47,6 +48,9 @@ graph TD;
 	plausibility -.-> escalate;
 	plausibility -.-> fallback;
 	plausibility -.-> staffing;
+	regel_tools --> regelfrage;
+	regelfrage -. &nbsp;end&nbsp; .-> __end__;
+	regelfrage -.-> regel_tools;
 	staffing --> explain;
 	supervisor -.-> anlass;
 	supervisor -.-> context;
@@ -54,7 +58,6 @@ graph TD;
 	supervisor -.-> reject;
 	escalate --> __end__;
 	memory --> __end__;
-	regelfrage --> __end__;
 	reject --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0

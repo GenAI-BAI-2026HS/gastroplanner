@@ -9,7 +9,10 @@ Schleifen und ihre Grenzen:
 - approval → korrektur → staffing → … → approval: MAX_REVISIONS, danach escalate
 - plausibility → fallback → plausibility: höchstens einmal (fallback_grund gesetzt)
 - Wiederholung bei Datenfehlern: im Node, nicht im Graphen (planung.MAX_VERSUCHE)
+- regelfrage ↔ regel_tools (Tool-Calling): regelfrage.MAX_SUCHEN, danach muss das LLM antworten
 """
+from langgraph.prebuilt import tools_condition
+
 MAX_REVISIONS = 3        # «anpassen»-Runden, danach Eskalation
 MAX_RUECKFRAGEN = 3      # Rückfragen beim Anlass, danach Eskalation
 
@@ -54,6 +57,14 @@ def route_after_approval(state) -> str:
     if decision == "anpassen":
         return "korrektur" if state.get("revisions", 0) < MAX_REVISIONS else "escalate"
     return "end"
+
+
+def route_after_regelfrage(state) -> str:
+    """Hat das LLM ein Tool gewählt? Dann ausführen, sonst ist die Antwort fertig.
+
+    tools_condition (LangGraph) prüft, ob die letzte Nachricht tool_calls enthält.
+    """
+    return "regel_tools" if tools_condition(state, messages_key="regel_messages") == "tools" else "end"
 
 
 def route_after_korrektur(state) -> str:

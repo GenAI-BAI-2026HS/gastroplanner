@@ -173,8 +173,9 @@ def test_regelfrage_mit_quelle(fake_llm, run):
 
     assert "__interrupt__" not in result
     assert any(h["section"] == "P-05 Schichtdauer" for h in result["rule_sources"])
-    system_prompt = [m for n, m in fake.calls if n == "text"][0][0].content
-    assert "P-05 Schichtdauer" in system_prompt                # Kontext ging ans LLM
+    zweiter_aufruf = [m for n, m in fake.calls if n == "tools"][1]
+    assert "P-05 Schichtdauer" in zweiter_aufruf[-1].content   # Suchtreffer gingen ans LLM
+    # Details zum Tool-Calling: tests/test_regelfrage.py
 
 
 # --- Anlass (B6) -----------------------------------------------------------------------

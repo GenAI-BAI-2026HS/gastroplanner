@@ -6,7 +6,8 @@ Faustregel (SW5): Im State stehen Rohdaten, kein formatierter Text.
 """
 from typing import Annotated, TypedDict
 
-from langgraph.graph.message import add_messages
+from langchain_core.messages import RemoveMessage
+from langgraph.graph.message import REMOVE_ALL_MESSAGES, add_messages
 
 
 class AgentState(TypedDict):
@@ -36,6 +37,7 @@ class AgentState(TypedDict):
     revisions: int                 # Anzahl «anpassen»-Runden
     escalation: str | None         # Grund für Eskalation an den Menschen
     plan_id: str | None            # gesetzt von commit
+    regel_messages: Annotated[list, add_messages]  # Tool-Schleife regelfrage ↔ regel_tools
 
 
 def initial_state(user_text: str) -> dict:
@@ -52,4 +54,6 @@ def initial_state(user_text: str) -> dict:
         "allowed": None, "pending_event": None, "anlass_versuche": 0,
         "fallback_grund": None, "feedback": None, "pending_corrections": [],
         "hinweis": None, "revisions": 0, "escalation": None, "plan_id": None,
+        # add_messages hängt an; zum Leeren braucht es RemoveMessage
+        "regel_messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES)],
     }

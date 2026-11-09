@@ -20,7 +20,8 @@ def build_graph(checkpointer=None):
     b.add_node("guard", guard.guard)                       # LLM, Helin
     b.add_node("reject", guard.reject)
     b.add_node("supervisor", supervisor.supervisor)        # LLM, B
-    b.add_node("regelfrage", regelfrage.regelfrage)        # LLM + RAG, Helin
+    b.add_node("regelfrage", regelfrage.regelfrage)        # LLM mit Tool-Wahl, Helin
+    b.add_node("regel_tools", regelfrage.regel_tools)      # ToolNode: RAG-Suche, Helin
     b.add_node("anlass", anlass.anlass)                    # LLM, B
     b.add_node("anlass_rueckfrage", anlass.anlass_rueckfrage)  # Mensch
     b.add_node("context", planung.context)                 # Tool (MCP)
@@ -40,6 +41,9 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("guard", r.route_after_guard, ["supervisor", "reject"])
     b.add_conditional_edges("supervisor", r.route_intent,
                             ["context", "anlass", "regelfrage", "reject"])
+    b.add_conditional_edges("regelfrage", r.route_after_regelfrage,
+                            {"regel_tools": "regel_tools", "end": END})
+    b.add_edge("regel_tools", "regelfrage")                # Tool-Schleife, begrenzt in regelfrage
     b.add_conditional_edges("anlass", r.route_after_anlass,
                             ["anlass_rueckfrage", "context", "escalate"])
     b.add_edge("anlass_rueckfrage", "anlass")
@@ -58,7 +62,7 @@ def build_graph(checkpointer=None):
                              "escalate": "escalate", "end": END})
     b.add_conditional_edges("korrektur", r.route_after_korrektur, ["staffing", "approval"])
     b.add_edge("commit", "memory")                         # Korrekturen erst nach Freigabe speichern
-    for end_node in ("regelfrage", "reject", "escalate", "memory"):
+    for end_node in ("reject", "escalate", "memory"):
         b.add_edge(end_node, END)
 
     return b.compile(checkpointer=checkpointer)
