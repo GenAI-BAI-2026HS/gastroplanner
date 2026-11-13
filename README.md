@@ -23,10 +23,10 @@ Den `API_KEY` erzeugt jede Person selbst in LiteLLM (Login über den Einladungsl
 python -m agent.run              # Agent im Terminal (mit Freigabe und Rückfragen)
 python -m agent.run --mermaid    # Graph-Bild nach docs/graph.mmd
 pytest                           # alle Tests, ohne API-Key und ohne Netzwerk
-pytest -m "not mcp"              # ohne den Test, der den MCP-Server startet
+pytest -m "not mcp"              # ohne die Tests, die den MCP-Server starten
 ```
 
-Solange die Funktionen von Person A und Helin noch fehlen, steht in `.env` `USE_FIXTURES=1`. Der Agent nutzt dann die Beispieldaten in `tests/fixtures/` (Woche ab 26.10.2026).
+Solange `search_rules` (C3) noch fehlt, steht in `.env` `USE_FIXTURES=1`. Der Agent nutzt dann die Beispieldaten in `tests/fixtures/` (Woche ab 26.10.2026). Wetter, Kalender, Prognose, Plausibilität und Besetzung sind umgesetzt; `tests/test_ende_zu_ende.py` prüft die Kette mit den echten Funktionen.
 
 Beispielanfragen:
 
@@ -70,9 +70,9 @@ Noch offene Funktionen aus Projektplan Abschnitt 5 existieren als Stubs mit Docs
 
 | Funktion | Datei | Owner | Stand |
 |---|---|---|---|
-| `get_weather`, `get_calendar` | `tools/weather.py`, `tools/calendar_ch.py` | B | Stub |
-| `forecast_guests` | `forecast/predict.py` | A | Stub |
-| `check_plausibility` | `forecast/checks.py` | A | Stub |
+| `get_weather`, `get_calendar` | `tools/weather.py`, `tools/calendar_ch.py` | B | fertig (Open-Meteo nur mit nachgebauter Antwort getestet) |
+| `forecast_guests` | `forecast/predict.py` | A | fertig |
+| `check_plausibility` | `forecast/checks.py` | A | fertig |
 | Testdaten (Tabelle `history`) | `data/generate.py`, `data/school_holidays.csv` | A | fertig, siehe [data/readme.md](data/readme.md) |
 | Training, `load_models` (trainiert selbst, wenn `.pkl` fehlt) | `forecast/train.py` | A | fertig |
 | `weekday_mean_forecast` (Fallback, auch als Baseline für A4 nutzbar) | `forecast/baseline.py` | A (eingebaut von B) | fertig |
@@ -80,8 +80,8 @@ Noch offene Funktionen aus Projektplan Abschnitt 5 existieren als Stubs mit Docs
 | `search_rules` | `tools/rag.py` | Helin | Stub |
 | `save_correction`, `get_corrections` | `tools/memory.py` | Helin | fertig |
 | `save_approved_plan` | `tools/plans.py` | B | fertig |
-| MCP-Server | `mcp_server/server.py` | B | fertig (ruft die Stubs auf) |
-| LangGraph-Orchestrator | `agent/` | B | Gerüst fertig, läuft mit Fixtures |
+| MCP-Server | `mcp_server/server.py` | B | fertig |
+| LangGraph-Orchestrator | `agent/` | B | fertig, mit echten Funktionen bis auf `search_rules` |
 
 ## Früheres Konzept
 
