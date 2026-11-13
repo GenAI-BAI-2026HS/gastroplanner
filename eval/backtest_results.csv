@@ -1,0 +1,7 @@
+verfahren,schicht,n,mae,fehler_pct,rmse,bias,abdeckung,unterbesetzt,ueberbesetzt
+Regression (A3),gesamt,120,2.242,0.081,3.137,-0.208,0.892,0.008,0.067
+Regression (A3),morgen,60,3.117,0.079,4.006,0.05,0.9,0.0,0.133
+Regression (A3),nachmittag,60,1.367,0.087,1.906,-0.467,0.883,0.017,0.0
+Wochentagsmittel (Baseline),gesamt,120,3.725,0.135,4.929,0.258,0.692,0.0,0.125
+Wochentagsmittel (Baseline),morgen,60,4.533,0.115,5.828,-0.1,0.717,0.0,0.133
+Wochentagsmittel (Baseline),nachmittag,60,2.917,0.186,3.823,0.617,0.667,0.0,0.117

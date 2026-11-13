@@ -5,17 +5,21 @@
 | `testset.py` | 13 Testfälle mit erwartetem Ergebnis | Helin (C6) |
 | `agent_eval.py` | Agenten-Evaluation: lokal oder als Experiment in LangSmith | Helin (C6) |
 | `rag_eval.py` | Trefferquote der Regelsuche (Hit@1, Hit@3, MRR) | Helin (C3/C6) |
+| `backtest.py` | Prognose gegen Wochentagsmittel, mit Fehlbesetzungen; schreibt auch `backtest_results.csv` und `docs/backtest.png` | Person A (A4) |
+| `modellvergleich.py` | 5 gleiche Anfragen an 2–3 Modelle für die Modellwahl | Person B (B1) |
 | `ergebnisse_*.md` | Ergebnisse, werden von den Skripten geschrieben | – |
 
 ## Ausführen
 
 ```bash
 python -m eval.rag_eval                 # ohne API, sofort
+python -m eval.backtest                 # ohne API, sofort
+python -m eval.modellvergleich MODELL_A MODELL_B   # braucht BASE_URL, API_KEY
 python -m eval.agent_eval               # braucht MODEL, BASE_URL, API_KEY in .env
 python -m eval.agent_eval --langsmith   # zusätzlich LANGSMITH_API_KEY
 ```
 
-Die Agenten-Evaluation ruft das echte LLM auf (13 Fälle, einige LLM-Aufrufe pro Fall). Prognose, Wetter und Kalender kommen noch aus den Beispieldaten, Besetzung (C2), Regelsuche (C3) und Memory (C5) laufen echt. Es wird nie ein Plan freigegeben, also nichts gespeichert.
+Die Agenten-Evaluation ruft das echte LLM auf (13 Fälle, einige LLM-Aufrufe pro Fall). Echt laufen Prognose (A3), Plausibilitätsprüfung (A5), Besetzung (C2), Regelsuche (C3) und Memory (C5). Nur Wetter und Kalender kommen aus den Beispieldaten der Woche ab 26.10.2026, damit die Ergebnisse mit festem Datum reproduzierbar bleiben (die Wetterprognose liefert nur Werte ab heute). Wetter und Kalender sind in `tests/test_kontext.py` separat getestet. Es wird nie ein Plan freigegeben, also nichts gespeichert.
 
 ## Testset
 
