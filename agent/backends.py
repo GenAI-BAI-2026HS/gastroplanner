@@ -19,6 +19,15 @@ def use_fixtures() -> bool:
     return os.getenv("USE_FIXTURES", "1") == "1"
 
 
+def use_mcp() -> bool:
+    """USE_MCP=0: Wetter und Kalender direkt aufrufen statt über den MCP-Server (A7).
+
+    Nur für ein Deployment gedacht, in dem der MCP-Subprozess nicht startet. Lokal und in
+    der Demo bleibt MCP an (Standard).
+    """
+    return os.getenv("USE_MCP", "1") == "1"
+
+
 @lru_cache
 def _fixture(name: str):
     return json.loads((config.FIXTURES_DIR / f"{name}.json").read_text(encoding="utf-8"))
@@ -28,6 +37,9 @@ def _fixture(name: str):
 def get_weather(start_date: str, days: int) -> list[dict]:
     if use_fixtures():
         return _fixture("weather_example")
+    if not use_mcp():
+        from tools.weather import get_weather as direkt
+        return direkt(start_date, days)
     from agent.mcp_client import call_mcp_tool
     return call_mcp_tool("get_weather", {"start_date": start_date, "days": days})
 
@@ -35,6 +47,9 @@ def get_weather(start_date: str, days: int) -> list[dict]:
 def get_calendar(start_date: str, days: int) -> list[dict]:
     if use_fixtures():
         return _fixture("calendar_example")
+    if not use_mcp():
+        from tools.calendar_ch import get_calendar as direkt
+        return direkt(start_date, days)
     from agent.mcp_client import call_mcp_tool
     return call_mcp_tool("get_calendar", {"start_date": start_date, "days": days})
 

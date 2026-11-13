@@ -19,11 +19,12 @@ Dazu Antwortzeit und Tokens pro Fall (Kosten: Tokens × Preis des Modells).
 
 Nicht anwendbare Prüfungen haben den Wert None und zählen nicht in den Durchschnitt.
 
-Testumgebung: Das LLM ist echt. Prognose, Wetter und Kalender kommen noch aus den
-Beispieldaten (USE_FIXTURES=1), weil A3/A5/B2 noch nicht fertig sind. Die fertigen
-Funktionen von Helin laufen echt: Besetzung (C2), Regelsuche (C3), Memory (C5, in einer
-temporären Datenbank). Sobald alles fertig ist: ECHTE_FUNKTIONEN erweitern bzw.
-USE_FIXTURES=0 setzen.
+Testumgebung: Das LLM ist echt. Echt laufen auch die Prognose (A3, Regressionsmodell),
+die Plausibilitätsprüfung (A5), die Besetzung (C2), die Regelsuche (C3) und das Memory
+(C5, in einer temporären Datenbank). Nur Wetter und Kalender kommen aus den Beispieldaten
+der Woche ab 26.10.2026: Die Open-Meteo-Prognose liefert nur Werte ab heute, die
+Evaluation soll aber mit festem Datum reproduzierbar sein. Wetter und Kalender (B2) sind
+in tests/test_kontext.py separat getestet.
 """
 import argparse
 import contextlib
@@ -54,9 +55,17 @@ QUELLE_RE = re.compile(r"\[([\w-]+\.md) · ([^\]]+)\]")
 # --- Testumgebung -----------------------------------------------------------------------
 @contextlib.contextmanager
 def testumgebung(simuliere: str | None = None):
-    """Fixtures für Prognose/Wetter/Kalender, echte Funktionen von Helin, festes Datum."""
+    """Wetter/Kalender aus Fixtures, alle anderen Funktionen echt, festes Datum."""
+    from forecast.checks import check_plausibility
+    from forecast.predict import predict_from
     from planning.staffing import calculate_staffing
     from tools import memory, rag
+
+    def echte_prognose(start_date: str, days: int) -> list[dict]:
+        # Regression (A3) auf den Kontextdaten; über backends, damit der simulierte
+        # Wetter-Ausfall auch die Prognose trifft.
+        return predict_from(backends.get_weather(start_date, days),
+                            backends.get_calendar(start_date, days))
 
     alt = {}
 
@@ -72,7 +81,9 @@ def testumgebung(simuliere: str | None = None):
         setze(supervisor, "heute", lambda: HEUTE)
         setze(anlass, "heute", lambda: HEUTE)
         setze(planung, "WARTEZEIT_S", 0)
-        # Echte Funktionen von Helin statt Beispieldaten
+        # Echte Funktionen statt Beispieldaten
+        setze(backends, "forecast_guests", echte_prognose)
+        setze(backends, "check_plausibility", check_plausibility)
         setze(backends, "calculate_staffing", calculate_staffing)
         setze(backends, "search_rules", rag.search_rules)
         setze(backends, "get_corrections", memory.get_corrections)
@@ -283,7 +294,7 @@ def langsmith_experiment():
         )
     return evaluate(run_case, data=DATASET, evaluators=EVALUATOREN,
                     experiment_prefix="gastroplanner", max_concurrency=1,
-                    metadata={"umgebung": "fixtures + echte C2/C3/C5"})
+                    metadata={"umgebung": "Wetter/Kalender fixtures, echte A3/A5/C2/C3/C5"})
 
 
 def fehlende_einstellungen(langsmith: bool) -> list[str]:
