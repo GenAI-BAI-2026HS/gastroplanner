@@ -11,8 +11,11 @@ Architektur und Begründungen: [docs/architektur.md](docs/architektur.md)
 ```bash
 git clone https://github.com/GenAI-BAI-2026HS/gastroplanner.git && cd gastroplanner
 pip install -r requirements.txt
-cp .env.example .env        # MODEL, BASE_URL, API_KEY, LANGSMITH_API_KEY eintragen
+cp .env.example .env        # MODEL, API_KEY, LANGSMITH_API_KEY eintragen (BASE_URL ist vorausgefüllt)
+python -m agent.check_gateway   # prüft Gateway, Modell und strukturierte Ausgabe
 ```
+
+Den `API_KEY` erzeugt jede Person selbst in LiteLLM (Login über den Einladungslink mit dem FHNW-Konto). Welche Modelle verfügbar sind, zeigt `python -m agent.check_gateway --models`.
 
 ## Starten und testen
 
