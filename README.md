@@ -106,8 +106,8 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 |---|---|---|
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
 | Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
-| Agent (C6), 13 Fälle mit echtem LLM | _nach dem Lauf eintragen_: Ergebnis, Absicht, Anlass, Quelle, Zahlen aus Tools; Antwortzeit und Tokens | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
-| Modellwahl (B1), 5 gleiche Anfragen | _nach dem Lauf eintragen_ | [docs/modellwahl.md](docs/modellwahl.md) |
+| Agent (C6), 13 Fälle mit echtem LLM | Ergebnis 13/13, Absicht 10/10, Anlass 1/1, Quelle 3/3, Zahlen aus Tools 6/7 (R2: Fehlalarm, die Zahl stammt aus der Frage). Ø 5.3 s und 4172 Tokens pro Fall (`claude-haiku-5-5`) | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
+| Modellwahl (B1), 5 gleiche Anfragen | Gewählt `claude-haiku-5-5`: 5/5 richtig, gegenüber 4/5 bei `gpt-6-luna` (Anbieterfilter blockt den Manipulationsversuch) und 1/5 bei `gpt-oss-120b`; beide günstigsten Modelle kosten 0.10 / 0.50 $ pro Mio. Tokens | [docs/modellwahl.md](docs/modellwahl.md), [eval/ergebnisse_modellvergleich.md](eval/ergebnisse_modellvergleich.md) |
 
 ```bash
 python -m eval.backtest                      # A4, ohne API

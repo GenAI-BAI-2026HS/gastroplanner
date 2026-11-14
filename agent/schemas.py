@@ -23,8 +23,10 @@ class Route(BaseModel):
                     "anlass: ein Ereignis mit zusätzlichen Gästen (Firmenlunch, Apéro, Gruppe) melden. "
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
-    start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "
-                                   "Person ein Datum oder eine Woche nennt. Sonst null.")
+    start_date: str | None = Field(None, description="Startdatum der Planungswoche als YYYY-MM-DD, "
+                                   "nur wenn die Person ausdrücklich nennt, ab wann geplant werden "
+                                   "soll (z. B. «Woche ab 2. November»). Das Datum eines Anlasses "
+                                   "ist kein Startdatum. Sonst null.")
 
 
 class Anlass(BaseModel):

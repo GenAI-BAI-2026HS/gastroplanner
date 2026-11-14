@@ -67,10 +67,9 @@ def _faelle():
 
 
 def vergleiche(modell: str) -> dict:
-    from langchain_openai import ChatOpenAI
+    from agent.llm import make_llm
 
-    llm = ChatOpenAI(model=modell, base_url=os.environ["BASE_URL"],
-                     api_key=os.environ["API_KEY"], temperature=0)
+    llm = make_llm(modell)          # gleiche Einstellungen wie im Agenten
     zeilen = []
     for name, aufruf, pruefung in _faelle():
         with get_usage_metadata_callback() as usage:

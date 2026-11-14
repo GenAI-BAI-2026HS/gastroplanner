@@ -2,10 +2,6 @@
 
 Bezug: SW4, Folien 24–31 (Modellauswahl) · Vergleich: [`eval/ergebnisse_modellvergleich.md`](../eval/ergebnisse_modellvergleich.md)
 
-> **Offen:** Vergleichslauf und Entscheid. Ausführen mit
-> `python -m eval.modellvergleich MODELL_A MODELL_B [MODELL_C]` (Namen: `python -m agent.check_gateway --models`),
-> danach Abschnitt 3 und 4 ausfüllen und diesen Kasten löschen.
-
 ## 1. Was das Modell können muss
 
 Nach der Einteilung aus SW4 (Folie 24) ist unser Use-Case **Multi-Turn / Reasoning mit Tool-Use und Orchestrierung**, nicht reine Textgenerierung. Das Modell rechnet keine Zahlen (das machen Regression und Planungsfunktion), muss aber zuverlässig:
@@ -30,21 +26,26 @@ Kriterien nach SW4 (Folien 25–26):
 
 ## 3. Ergebnis
 
+Lauf vom 14.11.2026. Verglichen wurden bewusst nur die günstigsten Chat-Modelle mit Tool-Calling im Gateway (Preise laut LiteLLM `/model/info`). Teurere Modelle wie `gpt-5.4-mini-new` (0.75 / 4.50 $) oder `gpt-6.1-sol` (2 / 10 $ pro Mio. Tokens) haben wir wegen des Kostenlimits pro Key nicht einbezogen.
+
 | | Modell A | Modell B | Modell C |
 |---|---|---|---|
-| Name | | | |
-| Richtig (von 5) | | | |
-| Antwortzeit Ø (s) | | | |
-| Tokens für 5 Anfragen | | | |
-| Auffälligkeiten | | | |
+| Name | `gpt-6-luna` | `azure_ai/claude-haiku-5-5` | `azure_ai/gpt-oss-120b` |
+| Preis Input / Output (pro Mio. Tokens) | 0.10 / 0.50 $ | 0.10 / 0.50 $ | 0.15 / 0.60 $ |
+| Richtig (von 5) | 4 | **5** | 1 |
+| Antwortzeit Ø (s) | 1.2 | 1.2 | 1.8 |
+| Tokens für 5 Anfragen | 1622 | 4810 | 2482 |
+| Auffälligkeiten | Der Azure-Inhaltsfilter blockt den Manipulationsversuch mit HTTP 400, bevor unser guard entscheiden kann. In der App erschiene «Technischer Fehler» statt einer höflichen Ablehnung. | Löst alle Fälle; braucht für dieselben Anfragen rund dreimal mehr Tokens. | Füllt die Pydantic-Schemas meist falsch; nur der Tool-Aufruf klappt. Verbraucht zusätzlich Reasoning-Tokens. |
+
+Einstellungen: `temperature=0`, `REASONING_EFFORT=none` (schaltet bei `gpt-6-luna` das Nachdenken ab, sonst ist `temperature=0` nicht erlaubt) und `drop_params` (das Gateway lässt Parameter weg, die ein Modell nicht kennt, z. B. `temperature` bei Haiku). Alles zentral in `agent/llm.py` (`make_llm`), damit Agent und Vergleich dieselben Einstellungen nutzen.
 
 ## 4. Entscheid
 
-**Gewählt:** _Modellname_ (in `.env` als `MODEL`).
+**Gewählt:** `azure_ai/claude-haiku-5-5` (in `.env` als `MODEL`).
 
-Begründung (2–4 Sätze): _Welche Fälle hat es zuverlässig gelöst, wo waren die anderen schwächer, wie stehen Antwortzeit und Kosten im Verhältnis?_
+Begründung: Haiku hat als einziges Modell alle fünf Fälle gelöst, insbesondere die Manipulation über unseren eigenen guard abgelehnt statt an einem Anbieterfilter zu scheitern. Bei gleichem Tokenpreis wie `gpt-6-luna` und gleicher Antwortzeit kostet es durch den höheren Tokenverbrauch zwar etwa dreimal so viel, absolut aber weniger als 0.01 $ pro Planungslauf (Agenten-Evaluation: Ø 4172 Tokens pro Fall). In der Agenten-Evaluation (C6) erreicht es 13 von 13 korrekten Ergebnissen, siehe [`eval/ergebnisse_agent.md`](../eval/ergebnisse_agent.md).
 
-**Alternative:** Apertus (Swiss AI, offenes Modell) wäre aus Sicht Datenschutz und Transparenz attraktiv. _Ergebnis, falls getestet; sonst: nicht getestet, weil …_
+**Alternative:** Apertus (Swiss AI, offenes Modell) wäre aus Sicht Datenschutz und Transparenz attraktiv. Nicht getestet, weil das FHNW-Gateway Apertus nur als Embedding-Modell (`apertus-v1.1-swiss-embed-0.4b`) anbietet, nicht als Chat-Modell mit Tool-Calling.
 
 ## 5. Grenzen
 
