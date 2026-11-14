@@ -17,11 +17,20 @@ def get_llm():
     if _llm is None:
         from langchain_openai import ChatOpenAI
 
+        # Optional in .env: REASONING_EFFORT (z. B. none für Reasoning-Modelle, damit
+        # temperature=0 erlaubt ist und keine Denk-Tokens anfallen) und TEMPERATURE
+        # (leer = Parameter weglassen, für Modelle, die nur ihren Standardwert erlauben).
+        extra = {}
+        if effort := os.getenv("REASONING_EFFORT", "").strip():
+            extra["reasoning_effort"] = effort
+        temperature = os.getenv("TEMPERATURE", "0").strip()
+        if temperature:
+            extra["temperature"] = float(temperature)
         _llm = ChatOpenAI(
             model=os.environ["MODEL"],
             base_url=os.environ["BASE_URL"],
             api_key=os.environ["API_KEY"],
-            temperature=0,
+            **extra,
         )
     return _llm
 
