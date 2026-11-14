@@ -13,6 +13,8 @@ Prognose und das Deployment auch auf einem frisch geklonten Repo.
 import sqlite3
 from pathlib import Path
 
+from contextlib import closing
+
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
@@ -46,7 +48,7 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
 def load_history(db_path: Path | str = config.DB_PATH) -> pd.DataFrame:
     if not Path(db_path).exists():
         raise FileNotFoundError(f"{db_path} fehlt. Zuerst python data/generate.py ausführen.")
-    with sqlite3.connect(db_path) as con:
+    with closing(sqlite3.connect(db_path)) as con:
         return pd.read_sql("SELECT * FROM history ORDER BY date, shift", con)
 
 
