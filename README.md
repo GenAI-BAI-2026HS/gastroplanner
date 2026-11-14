@@ -14,6 +14,12 @@ Ein LLM-Orchestrator (LangGraph) holt Wetterprognose, Feiertage und Schulferien,
 | [eval/README.md](eval/README.md) | Testset und Evaluatoren |
 | [data/readme.md](data/readme.md) | Synthetische Testdaten und eingebaute Effekte |
 
+## Architektur
+
+![LangGraph-Graph des Agenten](docs/graph.png)
+
+Gestrichelte Pfeile sind Verzweigungen (`agent/routing.py`), durchgezogene feste Kanten. Das LLM kommt nur in guard, supervisor, anlass, regelfrage, explain und korrektur vor; alle Zahlen stammen aus Tools. Begründungen: [docs/architektur.md](docs/architektur.md).
+
 ## Setup
 
 ```bash
@@ -65,7 +71,7 @@ gastroplanner/
 │  ├─ plans.py               # approved_plans (nur vom commit-Node)               (B)
 │  ├─ rag.py, memory.py                                                           (Helin)
 ├─ mcp_server/server.py      # FastMCP: Wetter + Kalender                         (B)
-├─ docs_rag/                 # Regeldokumente für RAG                             (Helin)
+├─ docs_rag/                 # Regeldokumente für RAG: personalregeln, anlaesse, betrieb (Helin)
 ├─ eval/                     # Backtest (A), Modellvergleich (B), Agenten-Evaluation (Helin)
 ├─ data/                     # generate.py, school_holidays.csv, restaurant.db     (A)
 ├─ tests/                    # pytest + fixtures/*.json
@@ -99,7 +105,7 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 | Was | Ergebnis | Details |
 |---|---|---|
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
-| Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.77 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
+| Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
 | Agent (C6), 13 Fälle mit echtem LLM | _nach dem Lauf eintragen_: Ergebnis, Absicht, Anlass, Quelle, Zahlen aus Tools; Antwortzeit und Tokens | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
 | Modellwahl (B1), 5 gleiche Anfragen | _nach dem Lauf eintragen_ | [docs/modellwahl.md](docs/modellwahl.md) |
 
