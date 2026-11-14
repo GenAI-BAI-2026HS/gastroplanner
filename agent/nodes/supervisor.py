@@ -1,4 +1,4 @@
-"""Supervisor: Absicht erkennen und Startdatum extrahieren. Owner: Person B (B4)."""
+"""Supervisor: Absicht erkennen und Startdatum extrahieren. Aufgabe B4."""
 from datetime import date, timedelta
 
 from langchain_core.messages import SystemMessage

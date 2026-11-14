@@ -1,4 +1,4 @@
-"""Agenten-Evaluation mit Testset und Code-Evaluatoren. Owner: Helin (C6).
+"""Agenten-Evaluation mit Testset und Code-Evaluatoren. Aufgabe C6.
 
     python -m eval.agent_eval              # lokal: Tabelle im Terminal + eval/ergebnisse_agent.md
     python -m eval.agent_eval --langsmith  # Dataset + Experiment in LangSmith (evaluate)

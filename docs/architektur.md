@@ -12,11 +12,11 @@ Das LLM rechnet nie selbst. Gästezahlen und Besetzung kommen aus Funktionen; da
 |---|---|---|
 | `agent/graph.py` | `add_node`, `add_edge`, `add_conditional_edges`, `compile` | nur Verdrahtung |
 | `agent/routing.py` | alle Conditional-Edge-Funktionen | rein: State rein, Node-Name raus, kein LLM, kein I/O |
-| `agent/nodes/*.py` | ein Modul pro Owner | dünn: eine Funktion oder ein LLM-Aufruf pro Node |
+| `agent/nodes/*.py` | ein Modul pro Themenbereich | dünn: eine Funktion oder ein LLM-Aufruf pro Node |
 | `agent/backends.py` | einziger Zugang zu `forecast/`, `planning/`, `tools/` | Schalter `USE_FIXTURES` |
 | `agent/state.py` | `AgentState`, `initial_state()` | Rohdaten, kein Fliesstext |
 | `agent/schemas.py` | Pydantic-Modelle für `with_structured_output` | Literal-Typen statt freier Strings |
-| `agent/prompts.py` | alle Prompts, Leitplanken von Helin | ein Ort für Prompt-Änderungen |
+| `agent/prompts.py` | alle Prompts und Leitplanken | ein Ort für Prompt-Änderungen |
 | `agent/mcp_client.py` | synchroner Wrapper um den MCP-Server | Fehlertext → Exception |
 
 `agent/` importiert aus den Fachmodulen, nie umgekehrt. Prognose, Besetzung und RAG bleiben ohne LangGraph testbar.
@@ -63,18 +63,18 @@ flowchart TD
 
 Automatisch erzeugt: `python -m agent.run --mermaid` schreibt `docs/graph.mmd`, `--png` schreibt `docs/graph.png`.
 
-| Node | Typ | Owner | Modul |
-|---|---|---|---|
-| guard, reject | LLM (strukturiert) | Helin | `nodes/guard.py` |
-| supervisor | LLM (strukturiert) | B | `nodes/supervisor.py` |
-| regelfrage | LLM mit Tool-Wahl (`bind_tools`) | Helin | `nodes/regelfrage.py` |
-| regel_tools | `ToolNode` (RAG-Suche `regeln_suchen`) | Helin | `nodes/regelfrage.py`, `tools/rag.py` |
-| anlass, anlass_rueckfrage | LLM (strukturiert), Mensch | B | `nodes/anlass.py` |
-| context, forecast, plausibility, fallback, staffing | Tool, Regeln | B (ruft A, Helin) | `nodes/planung.py` |
-| explain | LLM + RAG | B | `nodes/explain.py` |
-| approval, commit | Mensch, Tool | B | `nodes/approval.py` |
-| korrektur, memory | LLM (strukturiert), Tool | Helin | `nodes/memory.py` |
-| escalate | Text | B | `nodes/ende.py` |
+| Node | Typ | Modul |
+|---|---|---|
+| guard, reject | LLM (strukturiert) | `nodes/guard.py` |
+| supervisor | LLM (strukturiert) | `nodes/supervisor.py` |
+| regelfrage | LLM mit Tool-Wahl (`bind_tools`) | `nodes/regelfrage.py` |
+| regel_tools | `ToolNode` (RAG-Suche `regeln_suchen`) | `nodes/regelfrage.py`, `tools/rag.py` |
+| anlass, anlass_rueckfrage | LLM (strukturiert), Mensch | `nodes/anlass.py` |
+| context, forecast, plausibility, fallback, staffing | Tool, Regeln | `nodes/planung.py` |
+| explain | LLM + RAG | `nodes/explain.py` |
+| approval, commit | Mensch, Tool | `nodes/approval.py` |
+| korrektur, memory | LLM (strukturiert), Tool | `nodes/memory.py` |
+| escalate | Text | `nodes/ende.py` |
 
 Gegenüber der Node-Tabelle im Projektplan neu: `reject` (gemeinsames Ende für guard und `themenfremd`), `anlass_rueckfrage` (eigener Node für den interrupt) und `escalate` als eigener Node. Seit dem Review-Feedback ausserdem `fallback` (Wochentagsmittel statt Wiederholung), die Trennung von `korrektur` (extrahieren) und `memory` (speichern nach der Freigabe) sowie `regel_tools` (Tool-Calling in der Regelfrage).
 

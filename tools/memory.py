@@ -1,4 +1,4 @@
-"""Langzeit-Memory: Korrekturen der Betriebsleitung (Tabelle corrections). Owner: Helin (C5).
+"""Langzeit-Memory: Korrekturen der Betriebsleitung (Tabelle corrections). Aufgabe C5.
 
 Kurzzeit- vs. Langzeit-Memory:
 - Kurzzeit = Checkpointer von LangGraph. Gilt nur innerhalb eines Gesprächs (thread_id).

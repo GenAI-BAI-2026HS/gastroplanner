@@ -1,4 +1,4 @@
-"""Streamlit-Oberfläche. Owner: Person A (A6).
+"""Streamlit-Oberfläche. Aufgabe A6.
 
     streamlit run app.py
 

@@ -1,4 +1,4 @@
-"""Safeguarding. Owner: Helin (C4).
+"""Safeguarding. Aufgabe C4.
 
 guard:  LLM mit strukturierter Ausgabe (Guard) prüft, ob die Anfrage zum Thema gehört.
 reject: gemeinsames Ende für guard und intent «themenfremd»; höfliche Ablehnung.

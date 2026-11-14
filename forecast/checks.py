@@ -1,4 +1,4 @@
-"""Plausibilitätsprüfung der Prognose. Owner: Person A (A5). Vertrag: Projektplan Abschnitt 5.
+"""Plausibilitätsprüfung der Prognose. Aufgabe A5. Vertrag: Projektplan Abschnitt 5.
 
 Geprüft wird, bevor geplant wird. Die issues sieht der Mensch bei der Freigabe oder in
 der Eskalation, deshalb sind sie als verständliche Sätze formuliert.

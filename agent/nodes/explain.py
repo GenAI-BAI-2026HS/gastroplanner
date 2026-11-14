@@ -1,4 +1,4 @@
-"""Plan erklären: Annahmen, Unsicherheit, Regelquellen. Owner: Person B (B4).
+"""Plan erklären: Annahmen, Unsicherheit, Regelquellen. Aufgabe B4.
 
 Das LLM bekommt den fertigen Plan als JSON und schreibt nur den Erklärtext.
 Die Tabelle zeigt die App direkt aus state["staffing"], nicht aus diesem Text.

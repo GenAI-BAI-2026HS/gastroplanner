@@ -1,4 +1,4 @@
-"""Alle Verzweigungen des Graphen. Owner: Person B (B4).
+"""Alle Verzweigungen des Graphen. Aufgabe B4.
 
 Jede Funktion ist rein: State rein, Name des nächsten Nodes raus. Kein LLM, kein I/O.
 Damit beantwortet diese Datei die Frage «Wo verzweigt der Graph?» und lässt sich mit

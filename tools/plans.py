@@ -1,4 +1,4 @@
-"""Freigegebene Pläne speichern (Tabelle approved_plans). Owner: Person B (B5).
+"""Freigegebene Pläne speichern (Tabelle approved_plans). Aufgabe B5.
 
 Simuliert «Schichtplan übermitteln». Wird ausschliesslich vom commit-Node aufgerufen,
 damit nachweisbar nichts ohne menschliche Freigabe gespeichert wird.

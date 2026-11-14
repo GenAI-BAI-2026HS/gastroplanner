@@ -54,51 +54,51 @@ Beispielanfragen (Demo-Ablauf):
 
 ```
 gastroplanner/
-├─ config.py                 # Schichten, Rollen, Schlüssel, Standort, Pfade      (A)
-├─ requirements.txt, .env.example, pytest.ini                                     (A)
-├─ agent/                    # LangGraph-Orchestrator                             (B)
+├─ config.py                 # Schichten, Rollen, Schlüssel, Standort, Pfade
+├─ requirements.txt, .env.example, pytest.ini
+├─ agent/                    # LangGraph-Orchestrator
 │  ├─ graph.py               #   nur Verdrahtung
 │  ├─ routing.py             #   alle Verzweigungen
 │  ├─ state.py, schemas.py, prompts.py, llm.py
 │  ├─ backends.py            #   Zugang zu forecast/, planning/, tools/ (USE_FIXTURES)
 │  ├─ mcp_client.py          #   MCP-Server per stdio
 │  ├─ run.py                 #   Kommandozeile
-│  └─ nodes/                 #   ein Modul pro Owner (guard, memory, regelfrage: Helin)
-├─ forecast/                 # train.py, predict.py, checks.py, baseline.py       (A)
-├─ planning/staffing.py      # calculate_staffing                                 (Helin)
+│  └─ nodes/                 #   ein Modul pro Themenbereich
+├─ forecast/                 # train.py, predict.py, checks.py, baseline.py
+├─ planning/staffing.py      # calculate_staffing
 ├─ tools/
-│  ├─ weather.py, calendar_ch.py                                                  (B)
-│  ├─ plans.py               # approved_plans (nur vom commit-Node)               (B)
-│  ├─ rag.py, memory.py                                                           (Helin)
-├─ mcp_server/server.py      # FastMCP: Wetter + Kalender                         (B)
-├─ docs_rag/                 # Regeldokumente für RAG: personalregeln, anlaesse, betrieb (Helin)
-├─ eval/                     # Backtest (A), Modellvergleich (B), Agenten-Evaluation (Helin)
-├─ data/                     # generate.py, school_holidays.csv, restaurant.db     (A)
+│  ├─ weather.py, calendar_ch.py
+│  ├─ plans.py               # approved_plans (nur vom commit-Node)
+│  ├─ rag.py, memory.py
+├─ mcp_server/server.py      # FastMCP: Wetter + Kalender
+├─ docs_rag/                 # Regeldokumente für RAG: personalregeln, anlaesse, betrieb
+├─ eval/                     # Backtest, Modellvergleich, Agenten-Evaluation
+├─ data/                     # generate.py, school_holidays.csv, restaurant.db
 ├─ tests/                    # pytest + fixtures/*.json
 ├─ docs/                     # Konzept, Architektur, Modellwahl, Graph-Bild, Backtest-Diagramm
 ├─ daten/, Skizze/           # Material aus dem früheren Konzept (siehe unten)
-└─ app.py                    # Streamlit-Oberfläche                               (A)
+└─ app.py                    # Streamlit-Oberfläche
 ```
 
 ## Stand der Vertragsfunktionen
 
 Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 
-| Funktion | Datei | Owner |
-|---|---|---|
-| `get_weather`, `get_calendar` (Open-Meteo, Feiertage SO, Brückentage, Schulferien) | `tools/weather.py`, `tools/calendar_ch.py` | B |
-| `forecast_guests` (OLS pro Schicht, 80 %-Prognoseintervall) | `forecast/predict.py` | A |
-| `check_plausibility` | `forecast/checks.py` | A |
-| Testdaten (Tabelle `history`) | `data/generate.py`, `data/school_holidays.csv` | A |
-| Training, `load_models` (trainiert selbst, wenn `.pkl` fehlt) | `forecast/train.py` | A |
-| `weekday_mean_forecast` (Fallback und Baseline im Backtest) | `forecast/baseline.py` | A (eingebaut von B) |
-| `calculate_staffing` | `planning/staffing.py` | Helin |
-| `search_rules` (Hybrid: BM25 + optional Embeddings) | `tools/rag.py` | Helin |
-| `save_correction`, `get_corrections` | `tools/memory.py` | Helin |
-| `save_approved_plan` | `tools/plans.py` | B |
-| MCP-Server | `mcp_server/server.py` | B |
-| LangGraph-Orchestrator | `agent/` | B (guard, memory, regelfrage: Helin) |
-| Streamlit-Oberfläche | `app.py` | A |
+| Funktion | Datei |
+|---|---|
+| `get_weather`, `get_calendar` (Open-Meteo, Feiertage SO, Brückentage, Schulferien) | `tools/weather.py`, `tools/calendar_ch.py` |
+| `forecast_guests` (OLS pro Schicht, 80 %-Prognoseintervall) | `forecast/predict.py` |
+| `check_plausibility` | `forecast/checks.py` |
+| Testdaten (Tabelle `history`) | `data/generate.py`, `data/school_holidays.csv` |
+| Training, `load_models` (trainiert selbst, wenn `.pkl` fehlt) | `forecast/train.py` |
+| `weekday_mean_forecast` (Fallback und Baseline im Backtest) | `forecast/baseline.py` |
+| `calculate_staffing` | `planning/staffing.py` |
+| `search_rules` (Hybrid: BM25 + optional Embeddings) | `tools/rag.py` |
+| `save_correction`, `get_corrections` | `tools/memory.py` |
+| `save_approved_plan` | `tools/plans.py` |
+| MCP-Server | `mcp_server/server.py` |
+| LangGraph-Orchestrator | `agent/` |
+| Streamlit-Oberfläche | `app.py` |
 
 ## Evaluation
 
@@ -126,14 +126,6 @@ python -m eval.modellvergleich MODELL_A MODELL_B
 - **Evaluation klein.** 13 selbst geschriebene Testfälle zeigen, dass die Abläufe funktionieren, sind aber keine statistisch belastbare Messung.
 - **Wetter und Kalender werden pro Lauf doppelt abgerufen** (context-Node über MCP und intern in `forecast_guests`).
 - **Kein echtes Schichtsystem.** «Übermitteln» speichert den Plan in einer Tabelle; Namen, Verfügbarkeiten und Arbeitszeitkonten der Mitarbeitenden sind nicht Teil der Lösung.
-
-## Beitrag jeder Person
-
-| Person | Beitrag | Aufgaben |
-|---|---|---|
-| Person A (_Name_) | Datengrundlage, Prognosemodell mit Backtest gegen eine Baseline, Plausibilitätsprüfung, Oberfläche, Deployment | A1–A7 |
-| Person B (_Name_) | LLM-Zugang und Modellwahl, Wetter und Kalender, MCP-Server, LangGraph-Orchestrator, Freigabe, Anlass-Erfassung | B1–B6 |
-| Helin | Regeldokumente, Besetzungsfunktion, RAG mit Quellen, Safeguarding, Memory, Evaluation, README, Präsentation | C1–C7 |
 
 ## Früheres Konzept (altes Material)
 

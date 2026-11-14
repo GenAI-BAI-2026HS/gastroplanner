@@ -1,4 +1,4 @@
-"""Gemeinsame Konstanten (Projektplan Abschnitt 1). Owner: Person A (A1).
+"""Gemeinsame Konstanten (Projektplan Abschnitt 1). Aufgabe A1.
 
 Personalschlüssel stehen hier und im Regeldokument docs_rag/personalregeln.md,
 nicht im Prompt: Zahlen rechnet der Code, nicht das LLM.

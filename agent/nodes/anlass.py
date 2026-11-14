@@ -1,4 +1,4 @@
-"""Anlass aus Freitext erfassen, bei Lücken nachfragen. Owner: Person B (B6).
+"""Anlass aus Freitext erfassen, bei Lücken nachfragen. Aufgabe B6.
 
 Zwei Nodes, weil LangGraph einen unterbrochenen Node beim Fortsetzen von vorne
 ausführt: Stünde der LLM-Aufruf im selben Node wie der interrupt, liefe er doppelt.

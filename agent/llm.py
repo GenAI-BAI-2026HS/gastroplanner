@@ -1,4 +1,4 @@
-"""LLM-Zugang über das LiteLLM-Gateway des Moduls (SW5). Owner: Person B (B1).
+"""LLM-Zugang über das LiteLLM-Gateway des Moduls (SW5). Aufgabe B1.
 
 Alle Nodes holen das Modell über get_llm(). So lässt es sich in Tests an einer
 einzigen Stelle durch ein Fake ersetzen (set_llm).

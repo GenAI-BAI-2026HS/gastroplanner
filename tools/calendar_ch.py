@@ -1,4 +1,4 @@
-"""Kalender: Öffnungstage, Feiertage SO, Brückentage, Schulferien. Owner: Person B (B2).
+"""Kalender: Öffnungstage, Feiertage SO, Brückentage, Schulferien. Aufgabe B2.
 
 Dieselben Definitionen nutzt auch der Testdaten-Generator (data/generate.py). Das ist
 wichtig: Das Modell wurde mit diesen Merkmalen trainiert, also muss die Prognose sie

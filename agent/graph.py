@@ -1,4 +1,4 @@
-"""Verdrahtung des Graphen. Owner: Person B (B4).
+"""Verdrahtung des Graphen. Aufgabe B4.
 
 Hier stehen nur add_node, add_edge, add_conditional_edges und compile.
 Die Logik steht in agent/nodes/, die Verzweigungen in agent/routing.py.
@@ -17,23 +17,23 @@ def build_graph(checkpointer=None):
     b = StateGraph(AgentState)
 
     # --- Nodes -----------------------------------------------------------------
-    b.add_node("guard", guard.guard)                       # LLM, Helin
+    b.add_node("guard", guard.guard)                       # LLM
     b.add_node("reject", guard.reject)
     b.add_node("supervisor", supervisor.supervisor)        # LLM, B
-    b.add_node("regelfrage", regelfrage.regelfrage)        # LLM mit Tool-Wahl, Helin
-    b.add_node("regel_tools", regelfrage.regel_tools)      # ToolNode: RAG-Suche, Helin
+    b.add_node("regelfrage", regelfrage.regelfrage)        # LLM mit Tool-Wahl
+    b.add_node("regel_tools", regelfrage.regel_tools)      # ToolNode: RAG-Suche
     b.add_node("anlass", anlass.anlass)                    # LLM, B
     b.add_node("anlass_rueckfrage", anlass.anlass_rueckfrage)  # Mensch
     b.add_node("context", planung.context)                 # Tool (MCP)
     b.add_node("forecast", planung.forecast)               # Tool, A
     b.add_node("plausibility", planung.plausibility)       # Regeln, A
     b.add_node("fallback", planung.fallback)               # Wochentagsmittel, A
-    b.add_node("staffing", planung.staffing)               # Tool, Helin
+    b.add_node("staffing", planung.staffing)               # Tool
     b.add_node("explain", explain.explain)                 # LLM + RAG, B
     b.add_node("approval", approval.approval)              # Mensch, B
-    b.add_node("korrektur", memory.korrektur)              # LLM, Helin (nur extrahieren)
+    b.add_node("korrektur", memory.korrektur)              # LLM (nur extrahieren)
     b.add_node("commit", approval.commit)                  # Tool, B
-    b.add_node("memory", memory.memory)                    # Tool, Helin (speichern nach Freigabe)
+    b.add_node("memory", memory.memory)                    # Tool (speichern nach Freigabe)
     b.add_node("escalate", ende.escalate)
 
     # --- Kanten ----------------------------------------------------------------

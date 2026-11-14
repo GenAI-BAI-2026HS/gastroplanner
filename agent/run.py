@@ -1,4 +1,4 @@
-"""Kommandozeile zum Testen des Agenten. Owner: Person B (B4).
+"""Kommandozeile zum Testen des Agenten. Aufgabe B4.
 
     python -m agent.run                 # Chat im Terminal (InMemorySaver)
     python -m agent.run --sqlite        # mit SqliteSaver (wie die App)

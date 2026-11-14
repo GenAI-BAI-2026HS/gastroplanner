@@ -1,4 +1,4 @@
-"""Backtest der Gästeprognose (A4): Regression gegen Wochentagsmittel. Owner: Person A.
+"""Backtest der Gästeprognose (A4): Regression gegen Wochentagsmittel.
 
     python -m eval.backtest        # schreibt eval/ergebnisse_backtest.md,
                                    # eval/backtest_results.csv und docs/backtest.png

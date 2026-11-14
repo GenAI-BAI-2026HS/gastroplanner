@@ -1,4 +1,4 @@
-"""Wochentagsmittel als Ersatzprognose. Owner: Person A (A4/A5), eingebaut von B.
+"""Wochentagsmittel als Ersatzprognose. Aufgabe A4/A5.
 
 Gleiche Logik wie die Baseline im Backtest (A4): Mittelwert desselben Wochentags und
 derselben Schicht über die letzten 8 Wochen vor dem Startdatum. Der Agent nutzt sie als

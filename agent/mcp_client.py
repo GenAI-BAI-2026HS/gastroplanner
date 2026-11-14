@@ -1,4 +1,4 @@
-"""Synchroner Zugriff auf den MCP-Server (stdio). Owner: Person B (B3).
+"""Synchroner Zugriff auf den MCP-Server (stdio). Aufgabe B3.
 
 Die Tools aus langchain-mcp-adapters lassen sich nur asynchron aufrufen. Der Graph
 bleibt trotzdem synchron (einfacher für Streamlit, SqliteSaver und pytest): Dieser

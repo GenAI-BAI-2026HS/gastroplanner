@@ -1,4 +1,4 @@
-"""Eskalation an den Menschen. Owner: Person B (B4)."""
+"""Eskalation an den Menschen. Aufgabe B4."""
 from langchain_core.messages import AIMessage
 
 
