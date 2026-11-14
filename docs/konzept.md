@@ -72,7 +72,7 @@ supervisor: Absicht + Startdatum
 Datenfehler oder zu viele Runden ──► Eskalation an die Betriebsleitung
 ```
 
-Das vollständige Graph-Bild steht in [graph.mmd](graph.mmd), die Begründungen in [architektur.md](architektur.md).
+Das vollständige Graph-Bild steht in [graph.png](graph.png) (Quelle: [graph.mmd](graph.mmd)), die Begründungen in [architektur.md](architektur.md).
 
 **Wo das LLM vorkommt:** guard, supervisor, anlass, regelfrage, explain, korrektur. **Wo es nicht vorkommt:** context, forecast, plausibility, fallback, staffing, commit, memory.
 

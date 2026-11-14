@@ -12,9 +12,9 @@ from tools import rag
 def test_dokumente_werden_in_regeln_aufgeteilt():
     abschnitte = rag.load_sections()
     titel = [d.metadata["section"] for d in abschnitte]
-    assert {d.metadata["source"] for d in abschnitte} == {"personalregeln.md", "anlaesse.md"}
+    assert {d.metadata["source"] for d in abschnitte} == {"personalregeln.md", "anlaesse.md", "betrieb.md"}
     assert len(titel) == len(set(titel))                               # jede Regel einmal
-    assert all(re.match(r"[PA]-\d\d ", t) for t in titel)              # mit Regel-ID
+    assert all(re.match(r"[PAB]-\d\d ", t) for t in titel)              # mit Regel-ID
     assert all(d.page_content.strip() for d in abschnitte)             # kein leerer Abschnitt
 
 
