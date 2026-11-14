@@ -5,6 +5,7 @@ damit nachweisbar nichts ohne menschliche Freigabe gespeichert wird.
 """
 import sqlite3
 import uuid
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -26,7 +27,8 @@ def save_approved_plan(staffing: list[dict], db_path: Path | str | None = None) 
     created_at = datetime.now().isoformat(timespec="seconds")
     rows = [(plan_id, created_at, r["date"], r["shift"], r["kueche"], r["service"],
              r["abwasch"], r["guests_planned"]) for r in staffing]
-    with sqlite3.connect(db_path) as con:
+    # closing: «with con» committet nur; ohne close bleibt die Datei unter Windows gesperrt
+    with closing(sqlite3.connect(db_path)) as con, con:
         con.execute(SCHEMA)
         con.executemany("INSERT INTO approved_plans VALUES (?,?,?,?,?,?,?,?)", rows)
     return plan_id
@@ -37,6 +39,6 @@ def count_approved_rows(db_path: Path | str | None = None) -> int:
     db_path = Path(db_path or config.DB_PATH)
     if not db_path.exists():
         return 0
-    with sqlite3.connect(db_path) as con:
+    with closing(sqlite3.connect(db_path)) as con, con:
         con.execute(SCHEMA)
         return con.execute("SELECT COUNT(*) FROM approved_plans").fetchone()[0]

@@ -16,6 +16,7 @@ Rolle addieren sich in calculate_staffing, z. B. +1 und nochmals +1 = +2.
 Datenschutz: Gespeichert werden nur Rollen und Anzahlen, keine Namen von Mitarbeitenden.
 """
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -72,9 +73,16 @@ def _pruefen(weekday, shift, role, delta) -> None:
         raise ValueError("delta muss eine ganze Zahl ungleich 0 sein")
 
 
-def _verbinden(db_path) -> sqlite3.Connection:
+@contextmanager
+def _verbinden(db_path):
+    """Verbindung mit Commit und Schliessen. «with sqlite3.connect()» allein committet nur
+    und lässt die Datei offen; unter Windows bleibt sie dann gesperrt."""
     db_path = Path(db_path or config.DB_PATH)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
-    con.execute(SCHEMA)
-    return con
+    try:
+        with con:
+            con.execute(SCHEMA)
+            yield con
+    finally:
+        con.close()
