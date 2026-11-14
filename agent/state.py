@@ -1,4 +1,4 @@
-"""LangGraph-State. Owner: Person B (B4). Alle Nodes lesen ihn.
+"""LangGraph-State. Aufgabe B4. Alle Nodes lesen ihn.
 
 Basis ist der Vertrag aus Projektplan Abschnitt 5. Die Felder unter «Erweiterung»
 brauchen die Router, um zu entscheiden (siehe docs/architektur.md, Abschnitt State).

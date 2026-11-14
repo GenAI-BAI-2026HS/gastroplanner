@@ -1,4 +1,4 @@
-"""Regelfrage mit Tool-Calling und RAG. Owner: Helin (C3, Review-Punkt 4).
+"""Regelfrage mit Tool-Calling und RAG. Aufgabe C3, Review-Punkt 4.
 
 Hier wählt das LLM selbst ein Tool (Function Calling, SW6):
 

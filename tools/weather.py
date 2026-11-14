@@ -1,4 +1,4 @@
-"""Wetterprognose über Open-Meteo. Owner: Person B (B2). Vertrag: Projektplan Abschnitt 5.
+"""Wetterprognose über Open-Meteo. Aufgabe B2. Vertrag: Projektplan Abschnitt 5.
 
 Open-Meteo ist gratis und braucht keinen API-Key. Abgefragt werden die Tageswerte
 Höchsttemperatur (temperature_2m_max) und Niederschlag (precipitation_sum) am Standort

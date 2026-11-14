@@ -1,4 +1,4 @@
-"""Prompts aller LLM-Nodes. Owner: Person B; Leitplanken (LEITPLANKEN) von Helin (C4).
+"""Prompts aller LLM-Nodes. Leitplanken (LEITPLANKEN): Aufgabe C4.
 
 Aufbau nach SW5: Ziel und Rolle, Instruktionen, Antwortformat, Leitplanken.
 Platzhalter in geschweiften Klammern werden mit str.format gefüllt.

@@ -1,4 +1,4 @@
-"""Testset für die Agenten-Evaluation. Owner: Helin (C6).
+"""Testset für die Agenten-Evaluation. Aufgabe C6.
 
 13 Fälle nach Projektplan C6 und C4: 3 Wochenplanungen, 3 Anlässe (1 vollständig,
 2 unvollständig), 3 Regelfragen, 3 themenfremde oder manipulative Anfragen (die drei

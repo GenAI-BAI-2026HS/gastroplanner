@@ -1,4 +1,4 @@
-"""Human-in-the-Loop: Freigabe und Übermittlung. Owner: Person B (B5).
+"""Human-in-the-Loop: Freigabe und Übermittlung. Aufgabe B5.
 
 approval enthält nur den interrupt und die Prüfung der Antwort. Gespeichert wird
 ausschliesslich nach «freigeben»: der Plan in commit, offene Korrekturen danach in memory.

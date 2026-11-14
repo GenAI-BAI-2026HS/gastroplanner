@@ -1,4 +1,4 @@
-"""MCP-Server: Wetter und Kalender als Tools. Owner: Person B (B3).
+"""MCP-Server: Wetter und Kalender als Tools. Aufgabe B3.
 
 Lokal testen:   mcp dev mcp_server/server.py
 Vom Agenten:    agent/mcp_client.py startet ihn per stdio (python -m mcp_server.server).

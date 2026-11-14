@@ -1,4 +1,4 @@
-"""Testdaten-Generator: synthetische Gästezahlen pro Tag und Schicht. Owner: Person A (A2).
+"""Testdaten-Generator: synthetische Gästezahlen pro Tag und Schicht. Aufgabe A2.
 
     python data/generate.py            # schreibt die Tabelle history in data/restaurant.db
     python data/generate.py --plot     # zusätzlich Kontrollplot nach docs/testdaten.png

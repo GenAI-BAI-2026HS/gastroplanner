@@ -1,4 +1,4 @@
-"""Hybrid Retrieval über docs_rag/ (BM25 + Chroma). Owner: Helin (C3).
+"""Hybrid Retrieval über docs_rag/ (BM25 + Chroma). Aufgabe C3.
 
 Ablauf (SW5: Document Loader, Text Splitter, Embeddings, Vektorspeicher, Retriever):
 

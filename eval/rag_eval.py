@@ -1,4 +1,4 @@
-"""Trefferquote der Regelsuche (C3). Owner: Helin (C6).
+"""Trefferquote der Regelsuche (C3). Aufgabe C6.
 
     python -m eval.rag_eval      # Tabelle im Terminal + eval/ergebnisse_rag.md
 

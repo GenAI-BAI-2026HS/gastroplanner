@@ -1,4 +1,4 @@
-"""Deterministische Planungskette ohne LLM. Owner: Person B (B4).
+"""Deterministische Planungskette ohne LLM. Aufgabe B4.
 
 Die Nodes rufen nur die Vertragsfunktionen (über agent/backends.py) auf und schreiben
 Rohdaten in den State. Fehler werden hier gefangen und als `escalation` gesetzt;

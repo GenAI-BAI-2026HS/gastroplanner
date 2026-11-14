@@ -1,4 +1,4 @@
-"""Besetzung aus Gästeprognose. Owner: Helin (C2). Vertrag: Projektplan Abschnitt 5.
+"""Besetzung aus Gästeprognose. Aufgabe C2. Vertrag: Projektplan Abschnitt 5.
 
 Rein deterministisch: kein LLM, keine Datenbank, kein Netzwerk. Gleicher Input ergibt
 immer denselben Plan. Die Zahlen kommen aus config.py, die Regel-IDs verweisen auf

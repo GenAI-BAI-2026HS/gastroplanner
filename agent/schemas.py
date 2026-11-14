@@ -1,6 +1,4 @@
 """Strukturierte Ausgaben der LLM-Nodes (SW5). Die Feldbeschreibungen sind Teil des Prompts.
-
-Owner: Person B (Route, Anlass), Helin (Guard, Korrektur).
 """
 from typing import Literal
 

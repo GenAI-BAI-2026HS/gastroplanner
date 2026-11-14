@@ -1,4 +1,4 @@
-"""Modellvergleich für die Modellwahl (B1). Owner: Person B.
+"""Modellvergleich für die Modellwahl (B1).
 
     python -m eval.modellvergleich MODELL_A MODELL_B [MODELL_C]
     python -m agent.check_gateway --models        # verfügbare Namen anzeigen

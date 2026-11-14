@@ -1,4 +1,4 @@
-"""Training der Gästeprognose. Owner: Person A (A3).
+"""Training der Gästeprognose. Aufgabe A3.
 
     python -m forecast.train        # trainiert beide Modelle, zeigt die Koeffizienten
 

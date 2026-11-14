@@ -1,12 +1,12 @@
 # Evaluation
 
-| Datei | Was | Owner |
+| Datei | Was | Aufgabe |
 |---|---|---|
-| `testset.py` | 13 Testfälle mit erwartetem Ergebnis | Helin (C6) |
-| `agent_eval.py` | Agenten-Evaluation: lokal oder als Experiment in LangSmith | Helin (C6) |
-| `rag_eval.py` | Trefferquote der Regelsuche (Hit@1, Hit@3, MRR) | Helin (C3/C6) |
-| `backtest.py` | Prognose gegen Wochentagsmittel, mit Fehlbesetzungen; schreibt auch `backtest_results.csv` und `docs/backtest.png` | Person A (A4) |
-| `modellvergleich.py` | 5 gleiche Anfragen an 2–3 Modelle für die Modellwahl | Person B (B1) |
+| `testset.py` | 13 Testfälle mit erwartetem Ergebnis | C6 |
+| `agent_eval.py` | Agenten-Evaluation: lokal oder als Experiment in LangSmith | C6 |
+| `rag_eval.py` | Trefferquote der Regelsuche (Hit@1, Hit@3, MRR) | C3/C6 |
+| `backtest.py` | Prognose gegen Wochentagsmittel, mit Fehlbesetzungen; schreibt auch `backtest_results.csv` und `docs/backtest.png` | A4 |
+| `modellvergleich.py` | 5 gleiche Anfragen an 2–3 Modelle für die Modellwahl | B1 |
 | `ergebnisse_*.md` | Ergebnisse, werden von den Skripten geschrieben | – |
 
 ## Ausführen

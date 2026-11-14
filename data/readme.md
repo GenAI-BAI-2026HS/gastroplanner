@@ -1,11 +1,11 @@
 # data/
 
-| Datei | Inhalt | Wer schreibt |
-|---|---|---|
-| `generate.py` | Testdaten-Generator (A2) | Person A |
-| `school_holidays.csv` | Schulferien der Volksschule Olten, 2024–2027 | Person A |
-| `restaurant.db` | Tabellen `history` (Generator), `approved_plans` (commit-Node), `corrections` (Memory) | siehe Projektplan Abschnitt 5 |
-| `checkpoints.db` | LangGraph-Checkpointer, nicht committet | Agent |
+| Datei | Inhalt |
+|---|---|
+| `generate.py` | Testdaten-Generator (A2) |
+| `school_holidays.csv` | Schulferien der Volksschule Olten, 2024–2027 |
+| `restaurant.db` | Tabellen `history` (Generator), `approved_plans` (commit-Node), `corrections` (Memory) |
+| `checkpoints.db` | LangGraph-Checkpointer, nicht committet |
 
 ## Testdaten neu erzeugen
 

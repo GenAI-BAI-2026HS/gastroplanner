@@ -1,4 +1,4 @@
-"""Korrekturen der Betriebsleitung (Langzeit-Memory). Owner: Helin (C5).
+"""Korrekturen der Betriebsleitung (Langzeit-Memory). Aufgabe C5.
 
 Lesen und Schreiben sind getrennt, damit nur freigegebene Korrekturen gespeichert werden:
 

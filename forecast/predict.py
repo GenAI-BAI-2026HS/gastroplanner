@@ -1,4 +1,4 @@
-"""Gästeprognose. Owner: Person A (A3). Vertrag: Projektplan Abschnitt 5.
+"""Gästeprognose. Aufgabe A3. Vertrag: Projektplan Abschnitt 5.
 
 Ablauf: Wetter (get_weather) und Kalender (get_calendar) für den Horizont holen, für jeden
 offenen Tag dieselben Merkmale bauen wie im Training (forecast.train.prepare) und pro
