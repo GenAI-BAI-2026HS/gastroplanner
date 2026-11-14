@@ -14,6 +14,7 @@ Die Plantabelle kommt direkt aus dem State (staffing, forecast), nicht aus dem L
 import os
 import sqlite3
 import uuid
+from contextlib import closing
 
 import pandas as pd
 import streamlit as st
@@ -207,7 +208,7 @@ def freigabe(payload: dict) -> None:
 def freigegebene_plaene() -> pd.DataFrame:
     if not config.DB_PATH.exists():
         return pd.DataFrame()
-    with sqlite3.connect(config.DB_PATH) as con:
+    with closing(sqlite3.connect(config.DB_PATH)) as con:
         hat = con.execute("SELECT 1 FROM sqlite_master WHERE name='approved_plans'").fetchone()
         if not hat:
             return pd.DataFrame()

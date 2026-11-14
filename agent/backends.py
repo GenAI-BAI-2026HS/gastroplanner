@@ -67,7 +67,8 @@ def get_history(start_date: str) -> list[dict]:
     if use_fixtures():
         return _fixture("history_example")
     import sqlite3
-    with sqlite3.connect(config.DB_PATH) as con:
+    from contextlib import closing
+    with closing(sqlite3.connect(config.DB_PATH)) as con:
         rows = con.execute("SELECT date, shift, guests FROM history WHERE date < ?",
                            (start_date,)).fetchall()
     return [{"date": d, "shift": s, "guests": g} for d, s, g in rows]

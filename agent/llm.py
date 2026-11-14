@@ -12,26 +12,33 @@ load_dotenv()
 _llm = None
 
 
+def make_llm(model: str | None = None):
+    """Chat-Modell über das Gateway, mit denselben Einstellungen für Agent und Modellvergleich.
+
+    temperature=0 für reproduzierbare Antworten. REASONING_EFFORT aus .env (z. B. none)
+    schaltet bei Reasoning-Modellen das Nachdenken ab: spart Denk-Tokens und erlaubt
+    temperature=0. drop_params lässt das Gateway Parameter weglassen, die ein Modell
+    nicht unterstützt (z. B. temperature bei claude-haiku), statt mit 400 abzubrechen.
+    """
+    from langchain_openai import ChatOpenAI
+
+    extra = {}
+    if effort := os.getenv("REASONING_EFFORT", "").strip():
+        extra["reasoning_effort"] = effort
+    return ChatOpenAI(
+        model=model or os.environ["MODEL"],
+        base_url=os.environ["BASE_URL"],
+        api_key=os.environ["API_KEY"],
+        temperature=0,
+        extra_body={"drop_params": True},
+        **extra,
+    )
+
+
 def get_llm():
     global _llm
     if _llm is None:
-        from langchain_openai import ChatOpenAI
-
-        # Optional in .env: REASONING_EFFORT (z. B. none für Reasoning-Modelle, damit
-        # temperature=0 erlaubt ist und keine Denk-Tokens anfallen) und TEMPERATURE
-        # (leer = Parameter weglassen, für Modelle, die nur ihren Standardwert erlauben).
-        extra = {}
-        if effort := os.getenv("REASONING_EFFORT", "").strip():
-            extra["reasoning_effort"] = effort
-        temperature = os.getenv("TEMPERATURE", "0").strip()
-        if temperature:
-            extra["temperature"] = float(temperature)
-        _llm = ChatOpenAI(
-            model=os.environ["MODEL"],
-            base_url=os.environ["BASE_URL"],
-            api_key=os.environ["API_KEY"],
-            **extra,
-        )
+        _llm = make_llm()
     return _llm
 
 
