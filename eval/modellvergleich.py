@@ -67,10 +67,10 @@ def _faelle():
 
 
 def vergleiche(modell: str) -> dict:
-    from langchain_openai import ChatOpenAI
+    from agent.llm import erstelle_llm
+    from agent.nodes.guard import ist_inhaltsfilter
 
-    llm = ChatOpenAI(model=modell, base_url=os.environ["BASE_URL"],
-                     api_key=os.environ["API_KEY"], temperature=0)
+    llm = erstelle_llm(modell)          # gleiche Einstellungen wie im Agenten (.env)
     zeilen = []
     for name, aufruf, pruefung in _faelle():
         with get_usage_metadata_callback() as usage:
@@ -78,7 +78,10 @@ def vergleiche(modell: str) -> dict:
             try:
                 ok, fehler = bool(pruefung(aufruf(llm))), ""
             except Exception as e:  # noqa: BLE001 – Fehler zählen als «nicht bestanden»
-                ok, fehler = False, f"{type(e).__name__}: {str(e)[:80]}"
+                if name == "Manipulation ablehnen" and ist_inhaltsfilter(e):
+                    ok, fehler = True, "vom Inhaltsfilter des Anbieters blockiert (zählt als abgelehnt)"
+                else:
+                    ok, fehler = False, f"{type(e).__name__}: {str(e)[:120]}"
             dauer = time.perf_counter() - t0
         tokens = sum(u.get("total_tokens", 0) for u in usage.usage_metadata.values())
         zeilen.append({"fall": name, "ok": ok, "dauer_s": dauer, "tokens": tokens, "fehler": fehler})
