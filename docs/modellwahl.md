@@ -2,10 +2,6 @@
 
 Bezug: SW4, Folien 24–31 (Modellauswahl) · Vergleich: [`eval/ergebnisse_modellvergleich.md`](../eval/ergebnisse_modellvergleich.md)
 
-> **Offen:** Vergleichslauf und Entscheid. Ausführen mit
-> `python -m eval.modellvergleich MODELL_A MODELL_B [MODELL_C]` (Namen: `python -m agent.check_gateway --models`),
-> danach Abschnitt 3 und 4 ausfüllen und diesen Kasten löschen.
-
 ## 1. Was das Modell können muss
 
 Nach der Einteilung aus SW4 (Folie 24) ist unser Use-Case **Multi-Turn / Reasoning mit Tool-Use und Orchestrierung**, nicht reine Textgenerierung. Das Modell rechnet keine Zahlen (das machen Regression und Planungsfunktion), muss aber zuverlässig:
@@ -30,23 +26,30 @@ Kriterien nach SW4 (Folien 25–26):
 
 ## 3. Ergebnis
 
+Fünf gleiche Anfragen mit den echten Prompts und Schemas des Agenten. Details: [`eval/ergebnisse_modellvergleich.md`](../eval/ergebnisse_modellvergleich.md).
+
 | | Modell A | Modell B | Modell C |
 |---|---|---|---|
-| Name | | | |
-| Richtig (von 5) | | | |
-| Antwortzeit Ø (s) | | | |
-| Tokens für 5 Anfragen | | | |
-| Auffälligkeiten | | | |
+| Name | `gpt-6-luna` | `gpt-5.4-mini-new` | `azure_ai/claude-haiku-5-5` |
+| Richtig (von 5) | 5 | 5 | 5 |
+| Antwortzeit Ø (s) | 1.4 | 0.9 | 1.3 |
+| Tokens für 5 Anfragen | 1 540 | 1 621 | 4 682 |
+| Auffälligkeiten | Reasoning-Modell, braucht `REASONING_EFFORT=none` für `temperature=0`; Manipulation schon vom Azure-Inhaltsfilter blockiert | Manipulation schon vom Azure-Inhaltsfilter blockiert | Nur `temperature=1` erlaubt (mit 0: alle Anfragen abgelehnt), dadurch weniger reproduzierbar; rund dreimal so viele Tokens; guard lehnt Manipulation selbst ab |
+
+Alle drei Modelle lösen die fünf Kernaufgaben. Die Unterschiede liegen bei Betrieb, Reproduzierbarkeit und Tokens, nicht bei der Qualität dieser fünf Fälle.
 
 ## 4. Entscheid
 
-**Gewählt:** _Modellname_ (in `.env` als `MODEL`).
+**Gewählt:** `gpt-6-luna` (in `.env` als `MODEL`).
 
-Begründung (2–4 Sätze): _Welche Fälle hat es zuverlässig gelöst, wo waren die anderen schwächer, wie stehen Antwortzeit und Kosten im Verhältnis?_
+Begründung: `gpt-6-luna` löst alle fünf Kernaufgaben und hat als einziges Modell auch die vollständige Agenten-Evaluation bestanden (C6: 13/13 Fälle, Ø 3.8 s, rund 1 800 Tokens pro Fall, [Ergebnisse](../eval/ergebnisse_agent.md)). Es läuft mit `temperature=0` und braucht am wenigsten Tokens. `gpt-5.4-mini-new` ist gleich zuverlässig und etwas schneller und wäre die erste Alternative, wenn Kosten oder Wartezeit wichtiger werden; es wurde aber nicht über alle 13 Fälle getestet. `claude-haiku-5-5` scheidet aus, weil es nur `temperature=1` erlaubt (Antworten schwanken stärker) und rund dreimal so viele Tokens braucht.
 
-**Alternative:** Apertus (Swiss AI, offenes Modell) wäre aus Sicht Datenschutz und Transparenz attraktiv. _Ergebnis, falls getestet; sonst: nicht getestet, weil …_
+Dank dem Gateway ist ein Wechsel eine Zeile in `.env` (`MODEL=`, bei Bedarf `TEMPERATURE` und `REASONING_EFFORT`); der Code bleibt gleich.
+
+**Alternative Apertus:** Aus Sicht Datenschutz und Transparenz attraktiv (offenes Schweizer Modell). Auf dem Gateway des Moduls ist Apertus aber nur als Embedding-Modell verfügbar (`andreasmartin/apertus-v1.1-swiss-embed-0.4b`), nicht als Chat-Modell. Für den Orchestrator (strukturierte Ausgabe, Tool-Calling) kam es deshalb nicht in Frage. Für einen echten Betrieb mit Personendaten wäre ein selbst oder in der Schweiz betriebenes Chat-Modell zu prüfen.
 
 ## 5. Grenzen
 
 - Fünf Anfragen pro Modell zeigen grobe Unterschiede, sind aber keine statistisch belastbare Messung. Die Agenten-Evaluation (C6) misst das gewählte Modell zusätzlich über 13 Fälle.
-- Mit `temperature=0` sind die Antworten weitgehend, aber nicht vollständig reproduzierbar.
+- Mit `temperature=0` sind die Antworten weitgehend, aber nicht vollständig reproduzierbar. Claude Haiku lief mit `temperature=1` und ist deshalb nicht ganz direkt vergleichbar.
+- Der Fall «Manipulation ablehnen» misst bei den GPT-Modellen den Inhaltsfilter des Anbieters, nicht nur das Modell.

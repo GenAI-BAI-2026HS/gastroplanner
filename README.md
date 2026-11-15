@@ -107,7 +107,7 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
 | Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
 | Agent (C6), 13 Fälle mit echtem LLM (`gpt-6-luna`) | 13/13 richtiges Ergebnis; Absicht 10/10, Anlass 1/1, Quelle 3/3, Zahlen nur aus Tools 7/7. Ø 3.8 s und rund 1 800 Tokens pro Fall. | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
-| Modellwahl (B1), 5 gleiche Anfragen | _nach dem Lauf eintragen_ | [docs/modellwahl.md](docs/modellwahl.md) |
+| Modellwahl (B1), 5 gleiche Anfragen an 3 Modelle | Alle 5/5. Gewählt `gpt-6-luna` (auch 13/13 in C6, wenigste Tokens); Alternative `gpt-5.4-mini-new` (schneller); `claude-haiku-5-5` nur mit `temperature=1` und rund dreimal so viele Tokens | [docs/modellwahl.md](docs/modellwahl.md) |
 
 ```bash
 python -m eval.backtest                      # A4, ohne API
