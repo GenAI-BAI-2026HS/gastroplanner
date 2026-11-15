@@ -106,7 +106,7 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 |---|---|---|
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
 | Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
-| Agent (C6), 13 Fälle mit echtem LLM | _nach dem Lauf eintragen_: Ergebnis, Absicht, Anlass, Quelle, Zahlen aus Tools; Antwortzeit und Tokens | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
+| Agent (C6), 13 Fälle mit echtem LLM (`gpt-6-luna`) | 13/13 richtiges Ergebnis; Absicht 10/10, Anlass 1/1, Quelle 3/3, Zahlen nur aus Tools 7/7. Ø 3.8 s und rund 1 800 Tokens pro Fall. | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
 | Modellwahl (B1), 5 gleiche Anfragen | _nach dem Lauf eintragen_ | [docs/modellwahl.md](docs/modellwahl.md) |
 
 ```bash
@@ -121,7 +121,7 @@ python -m eval.modellvergleich MODELL_A MODELL_B
 - **Synthetische Daten.** Die Gästehistorie ist generiert (`data/generate.py`) und enthält genau die Effekte, die das Modell als Merkmale bekommt. Der Vorsprung der Regression im Backtest ist deshalb optimistisch; in einem echten Restaurant kommen Effekte dazu, die das Modell nicht kennt (Baustellen, Konkurrenz, Bewertungen).
 - **Wetter im Backtest gemessen, im Betrieb prognostiziert.** Der echte Prognosefehler ist grösser als im Backtest.
 - **Personalschlüssel sind Annahmen** (P-01 bis P-04, `config.py`), nicht von einem Gastronomiebetrieb bestätigt.
-- **Safeguarding ist prompt-basiert.** Der guard-Node ist ein LLM-Urteil und kann mit geschickten Formulierungen umgangen werden. Die Zahlen sind trotzdem geschützt, weil sie nicht vom LLM kommen.
+- **Safeguarding ist prompt-basiert.** Der guard-Node ist ein LLM-Urteil und kann mit geschickten Formulierungen umgangen werden. Die Zahlen sind trotzdem geschützt, weil sie nicht vom LLM kommen. Zusätzlich blockiert der Inhaltsfilter des Anbieters (Azure OpenAI) offensichtliche Manipulationsversuche schon vor dem guard-Node (Testfall S3); der guard-Node wertet das als Ablehnung. Auf diesen Filter haben wir keinen Einfluss, er kann je nach Modell oder Anbieter fehlen.
 - **Regelsuche ohne Embeddings nur mit Stichworten.** Zusammengesetzte Wörter und Synonyme findet BM25 schlecht; mit `EMBEDDING_MODEL` läuft die Hybrid-Suche.
 - **Evaluation klein.** 13 selbst geschriebene Testfälle zeigen, dass die Abläufe funktionieren, sind aber keine statistisch belastbare Messung.
 - **Wetter und Kalender werden pro Lauf doppelt abgerufen** (context-Node über MCP und intern in `forecast_guests`).

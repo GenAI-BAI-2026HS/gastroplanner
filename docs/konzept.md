@@ -80,15 +80,15 @@ Das vollständige Graph-Bild steht in [graph.png](graph.png) (Quelle: [graph.mmd
 
 | Kriterium | Messung | Ergebnis | Stand |
 |---|---|---|---|
-| Lauffähiger Agent: Personalplan aus einem Satz | «Plane die Woche ab …» liefert erklärten Plan zur Freigabe, mit echten Daten | `tests/test_ende_zu_ende.py`, App | erfüllt (Lauf mit echtem LLM: C6) |
+| Lauffähiger Agent: Personalplan aus einem Satz | «Plane die Woche ab …» liefert erklärten Plan zur Freigabe, mit echten Daten | `tests/test_ende_zu_ende.py`, App | erfüllt (C6: W1–W3 mit echtem LLM 3/3) |
 | Prognose besser als Bauchgefühl | Backtest A4: MAE Regression < MAE Wochentagsmittel | 2.2 statt 3.7 Gäste (−40 %), [Ergebnisse](../eval/ergebnisse_backtest.md) | erfüllt |
 | Unsicherheit ehrlich | Abdeckung der 80 %-Spanne im Backtest | 89 % | erfüllt |
 | Regelfragen mit richtiger Quelle | Hit@3 der Regelsuche | 92 % (BM25), [Ergebnisse](../eval/ergebnisse_rag.md) | erfüllt |
 | Nichts ohne Freigabe | Test: Lauf ohne Freigabe schreibt nichts in `approved_plans` | `tests/test_graph.py`, `tests/test_app.py` | erfüllt |
-| Anlass mit Rückfrage | 1 vollständiger, 2 unvollständige Anlässe | Testset C6 (A1–A3) | offen bis zum LLM-Lauf |
-| Safeguarding | 3 manipulative/themenfremde Anfragen werden abgelehnt | Testset C6 (S1–S3) | offen bis zum LLM-Lauf |
-| Zahlen nur aus Tools | Evaluator `zahlen_aus_tools` | Testset C6 | offen bis zum LLM-Lauf |
-| Nachvollziehbar | Trace in LangSmith | Evaluationslauf C6 | offen bis zum LLM-Lauf |
+| Anlass mit Rückfrage | 1 vollständiger, 2 unvollständige Anlässe | A1 Plan mit richtig erfasstem Anlass, A2–A3 Rückfrage, [Ergebnisse](../eval/ergebnisse_agent.md) | erfüllt |
+| Safeguarding | 3 manipulative/themenfremde Anfragen werden abgelehnt | 3/3 abgelehnt (S3 schon vom Inhaltsfilter des Anbieters) | erfüllt |
+| Zahlen nur aus Tools | Evaluator `zahlen_aus_tools` | 7/7 Antworten ohne Zahl ohne Quelle | erfüllt |
+| Nachvollziehbar | Trace in LangSmith | Traces im LangSmith-Projekt `gastroplanner`, Experiment `gastroplanner-testset` | erfüllt |
 
 ## 6. Abgrenzung zum früheren Konzept
 
