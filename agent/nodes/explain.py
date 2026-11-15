@@ -41,5 +41,5 @@ def explain(state):
         korrekturen=json.dumps(state.get("corrections", []), ensure_ascii=False),
         regeln=format_rules(regeln) or "(keine)",
     )
-    text = llm.get_llm().invoke([SystemMessage(prompt), *state["messages"][-2:]]).content
+    text = llm.get_llm().invoke([SystemMessage(prompt), *state["messages"][-2:]]).text
     return {"explanation": text, "rule_sources": regeln, "messages": [AIMessage(text)]}

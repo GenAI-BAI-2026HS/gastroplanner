@@ -138,3 +138,10 @@ def test_bericht_zaehlt_nur_anwendbare():
 def test_rag_trefferquote_nicht_schlechter():
     kennzahlen, _ = auswerten()
     assert kennzahlen["hit_at_3"] >= 0.9
+
+
+def test_zahlen_aus_der_anfrage_sind_erlaubt():
+    out = {"text": "Ein Firmenlunch mit 30 Personen muss 2 Tage vorher gemeldet werden.",
+           "tool_daten": '{"regeln": ["Vorlaufzeit 2 Tage"]}',
+           "eingabe": "Bis wann muss ich einen Firmenlunch mit 30 Personen anmelden?"}
+    assert ev.zahlen_aus_tools(out, {"ergebnis": "antwort"})["score"] == 1

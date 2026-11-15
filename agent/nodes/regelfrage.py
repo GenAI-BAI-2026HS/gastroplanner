@@ -72,7 +72,7 @@ def regelfrage(state):
     if antwort.tool_calls and not limit_erreicht:     # LLM hat ein Tool gewählt
         return {"regel_messages": neu + [antwort]}
 
-    text = antwort.content if not antwort.tool_calls and antwort.content else NICHTS_GEFUNDEN
+    text = antwort.text if not antwort.tool_calls and antwort.text else NICHTS_GEFUNDEN
     schluss = AIMessage(text)
     return {"regel_messages": neu + [schluss], "messages": [schluss],
             "rule_sources": _quellen(verlauf)}

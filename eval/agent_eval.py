@@ -130,10 +130,11 @@ def run_case(inputs: dict) -> dict:
 
     payload = result["__interrupt__"][0].value if "__interrupt__" in result else None
     text = (payload or {}).get("erklaerung") or (payload or {}).get("frage") \
-        or (result["messages"][-1].content if result.get("messages") else "")
+        or (result["messages"][-1].text if result.get("messages") else "")
     return {
         "ergebnis": ergebnis_aus(state, payload),
         "intent": state.get("intent"),
+        "eingabe": inputs["eingabe"],
         "text": text or "",
         "events": state.get("events") or [],
         "rule_sources": state.get("rule_sources") or [],
@@ -201,7 +202,8 @@ def quelle_korrekt(outputs: dict, reference_outputs: dict) -> dict:
 def zahlen_aus_tools(outputs: dict, reference_outputs: dict) -> dict:
     if reference_outputs["ergebnis"] not in ("plan_zur_freigabe", "antwort") or not outputs["text"]:
         return {"key": "zahlen_aus_tools", "score": None}
-    erlaubt = _zahlen(outputs["tool_daten"])
+    # Erlaubt sind Zahlen aus den Tools und aus der Anfrage selbst («30 Personen»).
+    erlaubt = _zahlen(outputs["tool_daten"]) | _zahlen(outputs.get("eingabe", ""))
     fremd = sorted(_zahlen(outputs["text"]) - erlaubt)
     return {"key": "zahlen_aus_tools", "score": int(not fremd),
             "comment": f"Zahlen ohne Quelle: {fremd}" if fremd else "alle Zahlen aus Tools"}
