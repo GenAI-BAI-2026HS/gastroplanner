@@ -38,6 +38,10 @@ class AgentState(TypedDict):
     escalation: str | None         # Grund für Eskalation an den Menschen
     plan_id: str | None            # gesetzt von commit
     regel_messages: Annotated[list, add_messages]  # Tool-Schleife regelfrage ↔ regel_tools
+    pending_reservation: dict | None   # Reservation in Erfassung (Rückfrage oder Bestätigung)
+    reservation_versuche: int          # Anzahl Rückfragen bei der Reservation
+    reservation_id: int | None         # gesetzt von reservation_speichern
+    reservations: list[dict]           # Summe reservierter Personen pro Tag/Schicht (ohne Namen)
 
 
 def initial_state(user_text: str) -> dict:
@@ -54,6 +58,8 @@ def initial_state(user_text: str) -> dict:
         "allowed": None, "pending_event": None, "anlass_versuche": 0,
         "fallback_grund": None, "feedback": None, "pending_corrections": [],
         "hinweis": None, "revisions": 0, "escalation": None, "plan_id": None,
+        "pending_reservation": None, "reservation_versuche": 0, "reservation_id": None,
+        "reservations": [],
         # add_messages hängt an; zum Leeren braucht es RemoveMessage
         "regel_messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES)],
     }

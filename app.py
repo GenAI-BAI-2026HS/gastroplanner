@@ -32,6 +32,7 @@ ROLLEN = {"kueche": "Küche", "service": "Service", "abwasch": "Abwasch"}
 BEISPIELE = [
     "Plane die nächste Woche",
     "Am Donnerstag kommt mittags eine Firmengruppe mit 40 Personen",
+    "Reservation auf Meier, 4 Personen, Freitag 19 Uhr, Tel. 079 123 45 67",
     "Wie viele Gäste darf eine Servicekraft betreuen?",
 ]
 
@@ -99,8 +100,10 @@ def ausfuehren(eingabe) -> None:
 
 
 # --- Darstellung ---------------------------------------------------------------------------
-def plan_tabelle(plan: list[dict], forecast: list[dict] | None) -> pd.DataFrame:
+def plan_tabelle(plan: list[dict], forecast: list[dict] | None,
+                 reservations: list[dict] | None = None) -> pd.DataFrame:
     spanne = {(f["date"], f["shift"]): f for f in forecast or []}
+    reserviert = {(x["date"], x["shift"]): x["persons"] for x in reservations or []}
     zeilen = []
     for r in plan:
         f = spanne.get((r["date"], r["shift"]))
@@ -109,6 +112,7 @@ def plan_tabelle(plan: list[dict], forecast: list[dict] | None) -> pd.DataFrame:
             "Tag": f"{WOCHENTAGE[d.weekday()][:2]} {d.strftime('%d.%m.')}",
             "Schicht": r["shift"].capitalize(),
             "Gäste (Spanne)": f"{f['guests']} ({f['lower']}–{f['upper']})" if f else "–",
+            "Reserviert": reserviert.get((r["date"], r["shift"]), 0),
             "Geplant für": r["guests_planned"],
             "Küche": r["kueche"], "Service": r["service"], "Abwasch": r["abwasch"],
             "Regeln": ", ".join(r.get("rule_refs", [])),
@@ -150,6 +154,10 @@ def annahmen(state: dict) -> None:
             for e in state["events"]:
                 st.markdown(f"- {e.get('date')} {e.get('shift')}: {e.get('persons')} Personen "
                             f"({e.get('type', 'Anlass')})")
+        if state.get("reservations"):
+            st.markdown("**Reservationen** (zur Prognose addiert)")
+            for x in state["reservations"]:
+                st.markdown(f"- {x['date']} {x['shift']}: {x['persons']} Personen")
         if state.get("corrections"):
             st.markdown("**Angewendete Korrekturen**")
             for c in state["corrections"]:
@@ -175,7 +183,7 @@ def freigabe(payload: dict) -> None:
         st.markdown(payload.get("erklaerung") or "")
         if payload.get("fallback_grund"):
             st.warning("Diese Woche gilt die Ersatzprognose aus dem Wochentagsmittel.")
-        tabelle = plan_tabelle(payload["plan"], state.get("forecast"))
+        tabelle = plan_tabelle(payload["plan"], state.get("forecast"), state.get("reservations"))
         zeige_tabelle(tabelle)
         for k in payload.get("korrekturen_offen") or []:
             st.info(f"Wird bei Freigabe dauerhaft gespeichert: {k.get('note') or korrektur_text(k)}")
@@ -202,6 +210,35 @@ def freigabe(payload: dict) -> None:
             st.session_state.verlauf.append({"role": "user", "content": "Ablehnen"})
             ausfuehren(Command(resume={"decision": "ablehnen"}))
             st.rerun()
+
+
+def reservation_bestaetigen(payload: dict) -> None:
+    r = payload["reservation"]
+    with st.chat_message("assistant"):
+        st.markdown("Bitte prüfen Sie die Reservation. Gespeichert wird erst nach Bestätigung.")
+        d = pd.Timestamp(r["datum"])
+        st.table(pd.DataFrame([{
+            "Name": r["name"], "Telefon": r["telefon"], "Personen": r["personen"],
+            "Datum": f"{WOCHENTAGE[d.weekday()]} {d.strftime('%d.%m.%Y')}",
+            "Uhrzeit": r.get("uhrzeit") or "–", "Schicht": r["schicht"].capitalize(),
+        }]).set_index("Name"))
+        a, b = st.columns(2)
+        if a.button("Reservation speichern", type="primary", width="stretch"):
+            st.session_state.verlauf.append({"role": "user", "content": "Reservation speichern"})
+            ausfuehren(Command(resume={"decision": "speichern"}))
+            st.rerun()
+        if b.button("Verwerfen", width="stretch"):
+            st.session_state.verlauf.append({"role": "user", "content": "Verwerfen"})
+            ausfuehren(Command(resume={"decision": "verwerfen"}))
+            st.rerun()
+
+
+def kommende_reservationen() -> list[dict]:
+    try:
+        heute = pd.Timestamp.today().strftime("%Y-%m-%d")
+        return [x for x in backends.get_reservations() if x["date"] >= heute]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def freigegebene_plaene() -> pd.DataFrame:
@@ -231,6 +268,14 @@ with st.sidebar:
     for _, plan in plaene.iterrows():
         st.caption(f"**{plan['Plan']}** · {plan['Von']} bis {plan['Bis']} · freigegeben {plan['Freigegeben'][:16].replace('T', ' ')}")
 
+    st.subheader("Reservationen")
+    reservationen = kommende_reservationen()
+    if not reservationen:
+        st.caption("Keine kommenden.")
+    for x in reservationen:
+        zeit = x["time"] or x["shift"]
+        st.caption(f"{x['date']} {zeit} · **{x['name']}** · {x['persons']} P. · {x['phone']}")
+
     st.subheader("Gespeicherte Korrekturen")
     try:
         korrekturen = backends.get_corrections()
@@ -250,8 +295,9 @@ with st.sidebar:
 
 # --- Hauptbereich ----------------------------------------------------------------------------
 st.title("Personalplanung")
-st.caption("Der Agent plant Küche, Service und Abwasch aus der Gästeprognose. "
-           "Er rechnet nie selbst und übernimmt einen Plan erst nach deiner Freigabe.")
+st.caption("Der Agent plant Küche, Service und Abwasch aus der Gästeprognose plus "
+           "Reservationen und erfasst Tischreservationen. Er rechnet nie selbst und "
+           "übernimmt einen Plan erst nach deiner Freigabe.")
 
 if not st.session_state.verlauf and not st.session_state.offen:
     st.markdown("**Beispiele**")
@@ -272,10 +318,13 @@ for n in st.session_state.verlauf:
 offen = st.session_state.offen
 if offen and offen.get("typ") == "freigabe":
     freigabe(offen)
+if offen and offen.get("typ") == "reservation":
+    reservation_bestaetigen(offen)
 
 platzhalter = ("Antwort auf die Rückfrage …" if offen and offen.get("typ") == "rueckfrage"
                else "Frage oder Auftrag, z. B. «Plane die Woche ab Montag»")
-if text := st.chat_input(platzhalter, disabled=bool(offen and offen.get("typ") == "freigabe")):
+if text := st.chat_input(platzhalter,
+                         disabled=bool(offen and offen.get("typ") in ("freigabe", "reservation"))):
     st.session_state.verlauf.append({"role": "user", "content": text})
     if offen and offen.get("typ") == "rueckfrage":
         ausfuehren(Command(resume=text))

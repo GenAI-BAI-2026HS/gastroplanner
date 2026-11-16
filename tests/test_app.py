@@ -44,6 +44,26 @@ def test_plan_erst_nach_freigabe_gespeichert(app):
     assert "freigegeben" in app.session_state.verlauf[-1]["content"]
 
 
+def test_reservation_erst_nach_bestaetigung_gespeichert(monkeypatch, fake_llm):
+    from agent import backends
+    from agent.schemas import Reservation
+    monkeypatch.setenv("CHECKPOINTER", "memory")
+    fake_llm(Guard=OK, Route=Route(intent="reservation"),
+             Reservation=Reservation(name="Meier", telefon="079 123 45 67", personen=4,
+                                     datum="2026-10-30", uhrzeit="19:00"))
+    at = AppTest.from_file(str(config.ROOT / "app.py"), default_timeout=30)
+    at.run()
+    at.chat_input[0].set_value("Reservation Meier, 4 Personen, Freitag 19 Uhr").run()
+    assert not at.exception
+    assert at.session_state.offen["typ"] == "reservation"
+    assert backends.get_reservations() == []
+
+    _button(at, "Reservation speichern").click().run()
+    assert not at.exception
+    assert len(backends.get_reservations()) == 1
+    assert "Reservation gespeichert" in at.session_state.verlauf[-1]["content"]
+
+
 def test_ablehnen_speichert_nichts(app):
     app.chat_input[0].set_value("Plane die nächste Woche").run()
     _button(app, "Ablehnen").click().run()

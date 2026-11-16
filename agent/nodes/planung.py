@@ -19,6 +19,7 @@ import time
 import config
 from agent import backends
 from agent.mcp_client import MCPToolError
+from tools.reservations import reserved_per_shift
 
 DAYS = config.HORIZON_DAYS
 MAX_VERSUCHE = 3        # 1 Versuch + 2 Wiederholungen
@@ -87,7 +88,13 @@ def staffing(state):
 
     Gespeicherte Korrekturen (Langzeit-Memory, C5) plus die noch nicht freigegebenen
     Korrekturen aus diesem Lauf. Gespeichert wird erst nach der Freigabe (nodes/memory.py).
+
+    Reservationen (Tabelle reservations) im Planungshorizont werden pro Tag und Schicht
+    summiert und wie Anlässe zur Prognose addiert. Ins State kommen nur die Summen, keine
+    Namen oder Telefonnummern.
     """
     corrections = backends.get_corrections() + list(state.get("pending_corrections", []))
-    plan = backends.calculate_staffing(state["forecast"], state.get("events", []), corrections)
-    return {"staffing": plan, "corrections": corrections}
+    reservations = reserved_per_shift(backends.get_reservations(state["start_date"], DAYS))
+    plan = backends.calculate_staffing(state["forecast"],
+                                       state.get("events", []) + reservations, corrections)
+    return {"staffing": plan, "corrections": corrections, "reservations": reservations}
