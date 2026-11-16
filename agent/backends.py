@@ -154,3 +154,16 @@ def save_correction(weekday: int, shift: str, role: str, delta: int, note: str) 
 def save_approved_plan(staffing: list[dict]) -> str:
     from tools.plans import save_approved_plan as real
     return real(staffing)
+
+
+# --- Reservationen ------------------------------------------------------------------
+# Auch im Fixture-Modus echt (SQLite): Tests verwenden eine temporäre Datenbank.
+def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str,
+                     time: str | None = None) -> int:
+    from tools.reservations import save_reservation as real
+    return real(name, phone, persons, date_, shift, time)
+
+
+def get_reservations(start_date: str | None = None, days: int | None = None) -> list[dict]:
+    from tools.reservations import get_reservations as real
+    return real(start_date, days)

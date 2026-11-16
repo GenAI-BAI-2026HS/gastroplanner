@@ -50,4 +50,5 @@ Begründung: Haiku hat als einziges Modell alle fünf Fälle gelöst, insbesonde
 ## 5. Grenzen
 
 - Fünf Anfragen pro Modell zeigen grobe Unterschiede, sind aber keine statistisch belastbare Messung. Die Agenten-Evaluation (C6) misst das gewählte Modell zusätzlich über 13 Fälle.
-- Mit `temperature=0` sind die Antworten weitgehend, aber nicht vollständig reproduzierbar.
+- Mit `temperature=0` sind die Antworten weitgehend, aber nicht vollständig reproduzierbar. Claude Haiku lief mit `temperature=1` und ist deshalb nicht ganz direkt vergleichbar.
+- Der Fall «Manipulation ablehnen» misst bei den GPT-Modellen den Inhaltsfilter des Anbieters, nicht nur das Modell.

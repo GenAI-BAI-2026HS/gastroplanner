@@ -106,8 +106,8 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 |---|---|---|
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
 | Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
-| Agent (C6), 13 Fälle mit echtem LLM | Ergebnis 13/13, Absicht 10/10, Anlass 1/1, Quelle 3/3, Zahlen aus Tools 6/7 (R2: Fehlalarm, die Zahl stammt aus der Frage). Ø 5.3 s und 4172 Tokens pro Fall (`claude-haiku-5-5`) | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
-| Modellwahl (B1), 5 gleiche Anfragen | Gewählt `claude-haiku-5-5`: 5/5 richtig, gegenüber 4/5 bei `gpt-6-luna` (Anbieterfilter blockt den Manipulationsversuch) und 1/5 bei `gpt-oss-120b`; beide günstigsten Modelle kosten 0.10 / 0.50 $ pro Mio. Tokens | [docs/modellwahl.md](docs/modellwahl.md), [eval/ergebnisse_modellvergleich.md](eval/ergebnisse_modellvergleich.md) |
+| Agent (C6), 13 Fälle mit echtem LLM (`gpt-6-luna`) | 13/13 richtiges Ergebnis; Absicht 10/10, Anlass 1/1, Quelle 3/3, Zahlen nur aus Tools 7/7. Ø 3.8 s und rund 1 800 Tokens pro Fall. | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Experiment `gastroplanner-testset` |
+| Modellwahl (B1), 5 gleiche Anfragen an 3 Modelle | Alle 5/5. Gewählt `gpt-6-luna` (auch 13/13 in C6, wenigste Tokens); Alternative `gpt-5.4-mini-new` (schneller); `claude-haiku-5-5` nur mit `temperature=1` und rund dreimal so viele Tokens | [docs/modellwahl.md](docs/modellwahl.md) |
 
 ```bash
 python -m eval.backtest                      # A4, ohne API
@@ -121,7 +121,7 @@ python -m eval.modellvergleich MODELL_A MODELL_B
 - **Synthetische Daten.** Die Gästehistorie ist generiert (`data/generate.py`) und enthält genau die Effekte, die das Modell als Merkmale bekommt. Der Vorsprung der Regression im Backtest ist deshalb optimistisch; in einem echten Restaurant kommen Effekte dazu, die das Modell nicht kennt (Baustellen, Konkurrenz, Bewertungen).
 - **Wetter im Backtest gemessen, im Betrieb prognostiziert.** Der echte Prognosefehler ist grösser als im Backtest.
 - **Personalschlüssel sind Annahmen** (P-01 bis P-04, `config.py`), nicht von einem Gastronomiebetrieb bestätigt.
-- **Safeguarding ist prompt-basiert.** Der guard-Node ist ein LLM-Urteil und kann mit geschickten Formulierungen umgangen werden. Die Zahlen sind trotzdem geschützt, weil sie nicht vom LLM kommen.
+- **Safeguarding ist prompt-basiert.** Der guard-Node ist ein LLM-Urteil und kann mit geschickten Formulierungen umgangen werden. Die Zahlen sind trotzdem geschützt, weil sie nicht vom LLM kommen. Zusätzlich blockiert der Inhaltsfilter des Anbieters (Azure OpenAI) offensichtliche Manipulationsversuche schon vor dem guard-Node (Testfall S3); der guard-Node wertet das als Ablehnung. Auf diesen Filter haben wir keinen Einfluss, er kann je nach Modell oder Anbieter fehlen.
 - **Regelsuche ohne Embeddings nur mit Stichworten.** Zusammengesetzte Wörter und Synonyme findet BM25 schlecht; mit `EMBEDDING_MODEL` läuft die Hybrid-Suche.
 - **Evaluation klein.** 13 selbst geschriebene Testfälle zeigen, dass die Abläufe funktionieren, sind aber keine statistisch belastbare Messung.
 - **Wetter und Kalender werden pro Lauf doppelt abgerufen** (context-Node über MCP und intern in `forecast_guests`).
