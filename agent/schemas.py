@@ -21,8 +21,8 @@ class Route(BaseModel):
     intent: Literal["wochenplanung", "anlass", "reservation", "regelfrage", "themenfremd"] = Field(
         description="wochenplanung: Personalplan für eine Woche erstellen. "
                     "anlass: ein Ereignis mit zusätzlichen Gästen (Firmenlunch, Apéro, Gruppe) melden. "
-                    "reservation: einen Tisch für eine Person oder Gruppe reservieren "
-                    "(mit Name und/oder Telefonnummer der reservierenden Person). "
+                    "reservation: einen Tisch für eine Person oder Gruppe reservieren; immer, "
+                    "wenn von Reservation oder reservieren die Rede ist, auch ohne Name. "
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
     start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "

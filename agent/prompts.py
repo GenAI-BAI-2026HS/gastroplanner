@@ -36,9 +36,11 @@ SUPERVISOR_PROMPT = """Erkenne die Absicht der letzten Nachricht und extrahiere 
 falls eines genannt ist. Heute ist {heute} ({wochentag}).
 Wenn die Person einen Anlass meldet (z. B. «Donnerstag Firmenlunch, 40 Personen»),
 ist die Absicht «anlass», auch wenn sie zusätzlich um einen Plan bittet.
-Will die Person einen Tisch reservieren (z. B. «Reservation auf Meier, 4 Personen,
-Freitag 19 Uhr, 079 123 45 67»), ist die Absicht «reservation». Eine Reservation hat einen
-Namen oder eine Telefonnummer; ein Anlass ohne Name ist «anlass»."""
+Will die Person etwas reservieren oder spricht sie von einer Reservation (z. B. «Reservation
+auf Meier, 4 Personen, Freitag 19 Uhr» oder «Am Mittwoch kommt eine Gruppe von 20 Personen,
+mache die Reservation»), ist die Absicht «reservation», auch ohne Name oder Telefonnummer;
+diese werden danach erfragt. «anlass» nur, wenn ein Ereignis gemeldet wird, ohne dass von
+Reservation oder reservieren die Rede ist."""
 
 RESERVATION_PROMPT = """Extrahiere die Tischreservation aus dem Gespräch. Heute ist {heute} ({wochentag}).
 Bereits bekannte Angaben: {bekannt}
