@@ -1,4 +1,8 @@
-"""Tischreservationen (Tabelle reservations).
+"""Reservationen für Anlässe (Tabelle reservations).
+
+Reserviert werden kann nur für Anlässe ab config.RESERVATION_MIN_PERSONEN (10) Personen,
+z. B. Firmenessen oder Geburtstag. Jede Reservation wird zusätzlich zur Gästeprognose
+eingeplant; kleinere Gruppen kommen ohne Reservation und sind in der Prognose enthalten.
 
 Wer liest und schreibt:
 - save_reservation nur im Node reservation_speichern, also erst nachdem die Person die
@@ -24,7 +28,8 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS reservations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL, phone TEXT NOT NULL, persons INT NOT NULL,
-    date TEXT NOT NULL, shift TEXT NOT NULL, time TEXT, created_at TEXT NOT NULL
+    date TEXT NOT NULL, shift TEXT NOT NULL, time TEXT, created_at TEXT NOT NULL,
+    occasion TEXT
 )
 """
 
@@ -81,8 +86,14 @@ def pruefen(r: dict, heute: date) -> dict[str, str]:
     return fehler
 
 
+def reservierbar(persons: int) -> bool:
+    """Reservationen gibt es nur für Anlässe ab config.RESERVATION_MIN_PERSONEN Personen."""
+    return int(persons) >= config.RESERVATION_MIN_PERSONEN
+
+
 def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str,
-                     time: str | None = None, db_path: Path | str | None = None) -> int:
+                     time: str | None = None, occasion: str | None = None,
+                     db_path: Path | str | None = None) -> int:
     """Speichert eine Reservation und gibt ihre ID zurück. Ungültige Werte → ValueError."""
     telefon = telefon_normalisieren(phone)
     if not (name or "").strip():
@@ -91,58 +102,45 @@ def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str
         raise ValueError(f"Ungültige Telefonnummer: {phone}")
     if shift not in config.SHIFTS:
         raise ValueError(f"Unbekannte Schicht: {shift}")
-    if not isinstance(persons, int) or persons < 1:
-        raise ValueError("persons muss eine ganze Zahl ≥ 1 sein")
+    if not isinstance(persons, int) or not reservierbar(persons):
+        raise ValueError(f"Reservationen erst ab {config.RESERVATION_MIN_PERSONEN} Personen")
     date.fromisoformat(date_)
     with _verbinden(db_path) as con:
         cur = con.execute(
-            "INSERT INTO reservations (name, phone, persons, date, shift, time, created_at) "
-            "VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO reservations (name, phone, persons, date, shift, time, created_at, occasion) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (name.strip(), telefon, int(persons), date_, shift, time,
-             datetime.now().isoformat(timespec="seconds")))
+             datetime.now().isoformat(timespec="seconds"), (occasion or "").strip() or None))
         return cur.lastrowid
 
 
 def get_reservations(start_date: str | None = None, days: int | None = None,
                      db_path: Path | str | None = None) -> list[dict]:
     """Reservationen, optional nur im Zeitraum [start_date, start_date + days)."""
-    sql, args = "SELECT id, name, phone, persons, date, shift, time FROM reservations", []
+    sql = "SELECT id, name, phone, persons, date, shift, time, occasion FROM reservations"
+    args = []
     if start_date:
         ende = (date.fromisoformat(start_date) + timedelta(days=days or config.HORIZON_DAYS)).isoformat()
         sql += " WHERE date >= ? AND date < ?"
         args = [start_date, ende]
     with _verbinden(db_path) as con:
         rows = con.execute(sql + " ORDER BY date, shift, time, id", args).fetchall()
-    return [{"id": i, "name": n, "phone": p, "persons": pe, "date": d, "shift": s, "time": t}
-            for i, n, p, pe, d, s, t in rows]
-
-
-def ist_zusaetzlich(persons: int) -> bool:
-    """Über 5 Personen: zusätzlich zur Prognose. Kleinere sind in der Prognose enthalten."""
-    return int(persons) >= config.RESERVATION_ZUSATZ_AB
+    return [{"id": i, "name": n, "phone": p, "persons": pe, "date": d, "shift": s, "time": t,
+             "occasion": o} for i, n, p, pe, d, s, t, o in rows]
 
 
 def reserved_per_shift(reservations: list[dict]) -> list[dict]:
     """Summe der reservierten Personen pro Tag und Schicht, ohne Namen und Telefonnummern.
 
-    persons:      alle reservierten Personen (Anzeige in der Spalte «Reserviert»)
-    persons_zusatz: nur Reservationen über 5 Personen; nur diese addiert die Planung
-    [{"date": "2026-10-30", "shift": "nachmittag", "persons": 12, "persons_zusatz": 8,
-      "type": "Reservationen"}]
+    Format wie ein Anlass, damit calculate_staffing sie zur Prognose addiert:
+    [{"date": "2026-10-30", "shift": "nachmittag", "persons": 42, "type": "Reservationen"}]
     """
-    summe: dict[tuple[str, str], list[int]] = {}
+    summe: dict[tuple[str, str], int] = {}
     for r in reservations:
-        alle, zusatz = summe.setdefault((r["date"], r["shift"]), [0, 0])
-        p = int(r["persons"])
-        summe[(r["date"], r["shift"])] = [alle + p, zusatz + (p if ist_zusaetzlich(p) else 0)]
-    return [{"date": d, "shift": s, "persons": alle, "persons_zusatz": zusatz,
-             "type": "Reservationen"} for (d, s), (alle, zusatz) in sorted(summe.items())]
-
-
-def als_anlaesse(per_shift: list[dict]) -> list[dict]:
-    """Nur der zusätzliche Teil, im Anlass-Format für calculate_staffing."""
-    return [{"date": x["date"], "shift": x["shift"], "persons": x["persons_zusatz"],
-             "type": "Reservationen über 5 Personen"} for x in per_shift if x["persons_zusatz"]]
+        key = (r["date"], r["shift"])
+        summe[key] = summe.get(key, 0) + int(r["persons"])
+    return [{"date": d, "shift": s, "persons": p, "type": "Reservationen"}
+            for (d, s), p in sorted(summe.items())]
 
 
 def finde_bestehende(r: dict, bestehende: list[dict]) -> tuple[dict | None, list[dict]]:
@@ -173,6 +171,9 @@ def _verbinden(db_path):
     try:
         with con:
             con.execute(SCHEMA)
+            spalten = {row[1] for row in con.execute("PRAGMA table_info(reservations)")}
+            if "occasion" not in spalten:          # Datenbank von vor dem Feld «Grund»
+                con.execute("ALTER TABLE reservations ADD COLUMN occasion TEXT")
             yield con
     finally:
         con.close()
