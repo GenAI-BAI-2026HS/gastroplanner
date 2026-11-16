@@ -164,8 +164,11 @@ def reset_index() -> None:
 
 
 def _docs_stand():
-    return tuple((p.name, p.stat().st_mtime_ns)
-                 for p in sorted(Path(config.DOCS_RAG_DIR).glob("*.md")))
+    """Name, Zeitstempel und Grösse pro Dokument. Die Grösse fängt Änderungen ab, die unter
+    Windows im selben Zeitstempel landen (zwei schnelle Schreibvorgänge)."""
+    return tuple((p.name, s.st_mtime_ns, s.st_size)
+                 for p in sorted(Path(config.DOCS_RAG_DIR).glob("*.md"))
+                 for s in [p.stat()])
 
 
 def _suchtext(doc: Document) -> str:
