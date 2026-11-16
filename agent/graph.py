@@ -9,7 +9,8 @@ deshalb zeichnet draw_mermaid() alle Pfeile korrekt (Folien, README).
 from langgraph.graph import END, START, StateGraph
 
 from agent import routing as r
-from agent.nodes import anlass, approval, ende, explain, guard, memory, planung, regelfrage, supervisor
+from agent.nodes import (anlass, approval, ende, explain, guard, memory, planung, regelfrage,
+                         reservation, supervisor)
 from agent.state import AgentState
 
 
@@ -24,6 +25,10 @@ def build_graph(checkpointer=None):
     b.add_node("regel_tools", regelfrage.regel_tools)      # ToolNode: RAG-Suche
     b.add_node("anlass", anlass.anlass)                    # LLM, B
     b.add_node("anlass_rueckfrage", anlass.anlass_rueckfrage)  # Mensch
+    b.add_node("reservation", reservation.reservation)     # LLM (extrahieren) + Prüfung
+    b.add_node("reservation_rueckfrage", reservation.reservation_rueckfrage)      # Mensch
+    b.add_node("reservation_bestaetigung", reservation.reservation_bestaetigung)  # Mensch
+    b.add_node("reservation_speichern", reservation.reservation_speichern)        # Tool
     b.add_node("context", planung.context)                 # Tool (MCP)
     b.add_node("forecast", planung.forecast)               # Tool, A
     b.add_node("plausibility", planung.plausibility)       # Regeln, A
@@ -40,7 +45,12 @@ def build_graph(checkpointer=None):
     b.add_edge(START, "guard")
     b.add_conditional_edges("guard", r.route_after_guard, ["supervisor", "reject"])
     b.add_conditional_edges("supervisor", r.route_intent,
-                            ["context", "anlass", "regelfrage", "reject"])
+                            ["context", "anlass", "reservation", "regelfrage", "reject"])
+    b.add_conditional_edges("reservation", r.route_after_reservation,
+                            ["reservation_rueckfrage", "reservation_bestaetigung", "escalate"])
+    b.add_edge("reservation_rueckfrage", "reservation")
+    b.add_conditional_edges("reservation_bestaetigung", r.route_after_reservation_bestaetigung,
+                            {"reservation_speichern": "reservation_speichern", "end": END})
     b.add_conditional_edges("regelfrage", r.route_after_regelfrage,
                             {"regel_tools": "regel_tools", "end": END})
     b.add_edge("regel_tools", "regelfrage")                # Tool-Schleife, begrenzt in regelfrage
@@ -62,7 +72,7 @@ def build_graph(checkpointer=None):
                              "escalate": "escalate", "end": END})
     b.add_conditional_edges("korrektur", r.route_after_korrektur, ["staffing", "approval"])
     b.add_edge("commit", "memory")                         # Korrekturen erst nach Freigabe speichern
-    for end_node in ("reject", "escalate", "memory"):
+    for end_node in ("reject", "escalate", "memory", "reservation_speichern"):
         b.add_edge(end_node, END)
 
     return b.compile(checkpointer=checkpointer)

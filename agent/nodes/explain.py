@@ -38,6 +38,7 @@ def explain(state):
                         if state.get("fallback_grund") else "Regression"),
         annahmen=json.dumps(_annahmen(state.get("forecast")), ensure_ascii=False),
         anlaesse=json.dumps(state.get("events", []), ensure_ascii=False),
+        reservationen=json.dumps(state.get("reservations", []), ensure_ascii=False),
         korrekturen=json.dumps(state.get("corrections", []), ensure_ascii=False),
         regeln=format_rules(regeln) or "(keine)",
     )

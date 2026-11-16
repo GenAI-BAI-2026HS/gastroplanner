@@ -18,9 +18,11 @@ class Guard(BaseModel):
 
 class Route(BaseModel):
     """Ergebnis des supervisor-Nodes (B4)."""
-    intent: Literal["wochenplanung", "anlass", "regelfrage", "themenfremd"] = Field(
+    intent: Literal["wochenplanung", "anlass", "reservation", "regelfrage", "themenfremd"] = Field(
         description="wochenplanung: Personalplan für eine Woche erstellen. "
                     "anlass: ein Ereignis mit zusätzlichen Gästen (Firmenlunch, Apéro, Gruppe) melden. "
+                    "reservation: einen Tisch für eine Person oder Gruppe reservieren "
+                    "(mit Name und/oder Telefonnummer der reservierenden Person). "
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
     start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "
@@ -38,6 +40,24 @@ class Anlass(BaseModel):
                                  "Null, wenn keine Zahl genannt ist.")
     art: str | None = Field(None, description="Art des Anlasses, z. B. Firmenlunch, Apéro, "
                             "Gruppenreservation.")
+
+
+class Reservation(BaseModel):
+    """Ergebnis des reservation-Nodes. Alle Felder optional: Lücken lösen eine Rückfrage aus."""
+    name: str | None = Field(None, description="Name, auf den reserviert wird, z. B. 'Meier' "
+                             "oder 'Anna Meier'. Null, wenn kein Name genannt ist.")
+    telefon: str | None = Field(None, description="Telefonnummer genau so, wie sie genannt "
+                                "wurde, z. B. '079 123 45 67'. Null, wenn keine genannt ist.")
+    personen: int | None = Field(None, description="Anzahl Personen der Reservation. "
+                                 "Null, wenn keine Zahl genannt ist.")
+    datum: str | None = Field(None, description="Datum als YYYY-MM-DD. Relative Angaben wie "
+                              "'Freitag' oder 'morgen' mit dem heutigen Datum auflösen. "
+                              "Null, wenn kein Datum genannt ist.")
+    uhrzeit: str | None = Field(None, description="Uhrzeit als HH:MM, z. B. '19:00', nur wenn "
+                                "eine Uhrzeit genannt ist. Sonst null.")
+    schicht: Schicht | None = Field(None, description="morgen (08–14 Uhr) oder nachmittag "
+                                    "(14–20 Uhr). Mittag/Lunch = morgen, Abend = nachmittag. "
+                                    "Null, wenn unklar.")
 
 
 class Korrektur(BaseModel):
