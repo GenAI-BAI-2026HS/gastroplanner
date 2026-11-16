@@ -30,12 +30,23 @@ def _annahmen(forecast: list[dict]) -> list[dict]:
             for f in forecast or []]
 
 
+def _prognose_anweisung(fallback_grund: str | None) -> str:
+    """Nur die zutreffende Anweisung ins Prompt. Eine bedingte Anweisung («falls Ersatz…»)
+    hat das Modell auch bei der Regression befolgt und eine Ersatzprognose erfunden."""
+    if not fallback_grund:
+        return ("Die Prognose stammt aus der Regression. Erwähne keine Ersatzprognose und "
+                "behaupte nicht, die Regression sei unplausibel.")
+    return ("Sage im ersten Satz, dass eine Ersatzprognose aus dem Mittel derselben Wochentage "
+            f"gilt, und nenne den Grund: {fallback_grund}")
+
+
 def explain(state):
     regeln = _regeln_zum_plan(state["staffing"], state.get("events", []))
     prompt = EXPLAIN_PROMPT.format(
         plan=json.dumps(state["staffing"], ensure_ascii=False),
         prognosequelle=(f"Ersatzprognose Wochentagsmittel ({state['fallback_grund']})"
                         if state.get("fallback_grund") else "Regression"),
+        prognose_anweisung=_prognose_anweisung(state.get("fallback_grund")),
         annahmen=json.dumps(_annahmen(state.get("forecast")), ensure_ascii=False),
         anlaesse=json.dumps(state.get("events", []), ensure_ascii=False),
         reservationen=json.dumps(state.get("reservations", []), ensure_ascii=False),

@@ -70,8 +70,7 @@ Erkläre der Betriebsleitung den folgenden Personalplan in höchstens acht Sätz
 - Wiederhole nicht die ganze Tabelle; die Tabelle wird separat angezeigt.
 - Nenne die wichtigsten Annahmen (Wetter, Feiertage, Anlässe, Reservationen) und die Unsicherheit:
   geplant wird mit dem oberen Wert der Prognosespanne.
-- Steht unter «Prognosequelle» eine Ersatzprognose, sage das im ersten Satz und nenne den
-  Grund: Die Regression war unplausibel, deshalb gilt das Mittel derselben Wochentage.
+- {prognose_anweisung}
 - Nenne angewendete Korrekturen der Betriebsleitung, falls vorhanden.
 - Nenne Regelquellen im Format [Datei · Abschnitt].
 - Schliesse mit dem Hinweis, dass der Plan erst nach Freigabe übernommen wird.

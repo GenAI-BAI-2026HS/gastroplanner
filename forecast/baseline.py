@@ -1,7 +1,8 @@
 """Wochentagsmittel als Ersatzprognose. Aufgabe A4/A5.
 
 Gleiche Logik wie die Baseline im Backtest (A4): Mittelwert desselben Wochentags und
-derselben Schicht über die letzten 8 Wochen vor dem Startdatum. Der Agent nutzt sie als
+derselben Schicht über die letzten 8 Wochen vor dem Startdatum (bzw. vor dem Ende der
+Historie, falls die Woche weiter in der Zukunft liegt). Der Agent nutzt sie als
 Fallback, wenn die Regression eine unplausible Prognose liefert. Eine Wiederholung der
 Regression würde nichts bringen, weil sie bei gleichem Input dasselbe Ergebnis liefert.
 
@@ -25,11 +26,15 @@ def weekday_mean_forecast(history: list[dict], start_date: str, days: int,
     Wirft ValueError, wenn für einen Wochentag und eine Schicht weniger als zwei Werte da sind.
     """
     start = date.fromisoformat(start_date)
-    fenster_start = start - timedelta(weeks=weeks)
+    # Fenster: die letzten `weeks` Wochen vor dem Start. Endet die Historie früher (Woche
+    # weit in der Zukunft), die letzten `weeks` Wochen mit Daten.
+    letzter_tag = max((date.fromisoformat(r["date"]) for r in history), default=None)
+    fenster_ende = min(start, letzter_tag + timedelta(days=1)) if letzter_tag else start
+    fenster_start = fenster_ende - timedelta(weeks=weeks)
     werte: dict[tuple[int, str], list[int]] = {}
     for row in history:
         d = date.fromisoformat(row["date"])
-        if fenster_start <= d < start:
+        if fenster_start <= d < fenster_ende:
             werte.setdefault((d.weekday(), row["shift"]), []).append(int(row["guests"]))
 
     tage = [start + timedelta(days=i) for i in range(days)]

@@ -46,6 +46,13 @@ def test_geschlossene_tage_aus_dem_kalender():
     assert {f["date"] for f in prognose} == set(offen)
 
 
+def test_woche_nach_ende_der_historie_nutzt_letzte_acht_wochen_mit_daten():
+    # Historie endet am 25.10.; Woche ab 14.12. liegt 7 Wochen danach
+    prognose = weekday_mean_forecast(history(), "2026-12-14", 7)
+    assert len(prognose) == 12
+    assert {f["guests"] for f in prognose} == {40, 20}
+
+
 def test_zu_wenig_historie():
     with pytest.raises(ValueError, match="Zu wenig Historie"):
         weekday_mean_forecast(history(wochen=1), START, 7)
