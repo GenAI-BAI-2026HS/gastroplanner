@@ -59,10 +59,17 @@ class Reservation(BaseModel):
     schicht: Schicht | None = Field(None, description="morgen (08–14 Uhr) oder nachmittag "
                                     "(14–20 Uhr). Mittag/Lunch = morgen, Abend = nachmittag. "
                                     "Null, wenn unklar.")
+    grund: str | None = Field(None, description="Grund bzw. Art des Anlasses, kurz, z. B. "
+                              "'Firmenessen', 'Geburtstag', 'Vereinsessen', 'Hochzeit'. "
+                              "Null, wenn kein Grund genannt ist.")
 
 
 class Korrektur(BaseModel):
-    """Ergebnis des memory-Nodes (C5)."""
+    """Ergebnis des korrektur-Nodes (C5): Personalkorrektur oder neue Reservation."""
+    art: Literal["korrektur", "reservation"] = Field("korrektur", description=(
+        "reservation: Das Feedback meldet Gäste, die an einem Tag kommen und reservieren "
+        "(z. B. «Mittwoch kommt noch Firma Müller mit 30 Personen»). korrektur: Das Feedback "
+        "ändert die Besetzung einer Rolle (z. B. «Freitag Nachmittag ein Service mehr»)."))
     eindeutig: bool = Field(description="False, wenn Wochentag, Schicht, Rolle oder Delta "
                             "nicht klar aus dem Feedback hervorgehen.")
     weekday: int | None = Field(None, description="0 = Montag, 1 = Dienstag, … 5 = Samstag")

@@ -49,11 +49,11 @@ def test_reservation_erst_nach_bestaetigung_gespeichert(monkeypatch, fake_llm):
     from agent.schemas import Reservation
     monkeypatch.setenv("CHECKPOINTER", "memory")
     fake_llm(Guard=OK, Route=Route(intent="reservation"),
-             Reservation=Reservation(name="Meier", telefon="079 123 45 67", personen=4,
-                                     datum="2026-10-30", uhrzeit="19:00"))
+             Reservation=Reservation(name="Meier", telefon="079 123 45 67", personen=25,
+                                     datum="2026-10-30", uhrzeit="19:00", grund="Firmenessen"))
     at = AppTest.from_file(str(config.ROOT / "app.py"), default_timeout=30)
     at.run()
-    at.chat_input[0].set_value("Reservation Meier, 4 Personen, Freitag 19 Uhr").run()
+    at.chat_input[0].set_value("Firmenessen Meier, 25 Personen, Freitag 19 Uhr").run()
     assert not at.exception
     assert at.session_state.offen["typ"] == "reservation"
     assert backends.get_reservations() == []

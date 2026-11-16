@@ -33,7 +33,7 @@ ROLLEN = {"kueche": "Küche", "service": "Service", "abwasch": "Abwasch"}
 BEISPIELE = [
     "Plane die nächste Woche",
     "Am Donnerstag kommt mittags eine Firmengruppe mit 40 Personen",
-    "Reservation auf Meier, 4 Personen, Freitag 19 Uhr, Tel. 079 123 45 67",
+    "Reservation Firmenessen Meier AG, 25 Personen, Freitag 18 Uhr, Tel. 079 123 45 67",
     "Wie viele Gäste darf eine Servicekraft betreuen?",
 ]
 
@@ -115,7 +115,6 @@ def plan_tabelle(plan: list[dict], forecast: list[dict] | None,
             "Schicht": r["shift"].capitalize(),
             "Gäste (Spanne)": f"{f['guests']} ({f['lower']}–{f['upper']})" if f else "–",
             "Reserviert": res.get("persons", 0),
-            "davon zusätzlich": res.get("persons_zusatz", 0),   # nur Reservationen über 5 P.
             "Geplant für": r["guests_planned"],
             "Küche": r["kueche"], "Service": r["service"], "Abwasch": r["abwasch"],
             "Regeln": ", ".join(r.get("rule_refs", [])),
@@ -158,10 +157,9 @@ def annahmen(state: dict) -> None:
                 st.markdown(f"- {e.get('date')} {e.get('shift')}: {e.get('persons')} Personen "
                             f"({e.get('type', 'Anlass')})")
         if state.get("reservations"):
-            st.markdown("**Reservationen** (nur über 5 Personen zusätzlich zur Prognose)")
+            st.markdown("**Reservationen** (zusätzlich zur Prognose eingeplant)")
             for x in state["reservations"]:
-                st.markdown(f"- {x['date']} {x['shift']}: {x['persons']} Personen reserviert, "
-                            f"davon {x.get('persons_zusatz', 0)} zusätzlich eingeplant")
+                st.markdown(f"- {x['date']} {x['shift']}: {x['persons']} Personen")
         if state.get("corrections"):
             st.markdown("**Angewendete Korrekturen**")
             for c in state["corrections"]:
@@ -197,7 +195,8 @@ def freigabe(payload: dict) -> None:
 
         st.markdown("**Freigabe:** Ohne Freigabe wird nichts gespeichert.")
         feedback = st.text_input("Was soll angepasst werden?", key="feedback",
-                                 placeholder="z. B. Freitagnachmittag immer eine Servicekraft mehr")
+                                 placeholder="z. B. Freitagnachmittag immer eine Servicekraft mehr "
+                                             "· oder: Mittwoch kommt Firma Müller mit 30 Personen")
         a, b, c = st.columns(3)
         if a.button("Freigeben", type="primary", width="stretch"):
             archivieren(payload, tabelle)
@@ -225,6 +224,7 @@ def reservation_bestaetigen(payload: dict) -> None:
             "Name": r["name"], "Telefon": r["telefon"], "Personen": r["personen"],
             "Datum": f"{WOCHENTAGE[d.weekday()]} {d.strftime('%d.%m.%Y')}",
             "Uhrzeit": r.get("uhrzeit") or "–", "Schicht": r["schicht"].capitalize(),
+            "Grund": r.get("grund") or "–",
         }]).set_index("Name"))
         if payload.get("hinweis"):
             st.caption(payload["hinweis"])
@@ -280,7 +280,8 @@ with st.sidebar:
         st.caption("Keine kommenden.")
     for x in reservationen:
         zeit = x["time"] or x["shift"]
-        st.caption(f"{x['date']} {zeit} · **{x['name']}** · {x['persons']} P. · {x['phone']}")
+        grund = f" · {x['occasion']}" if x.get("occasion") else ""
+        st.caption(f"{x['date']} {zeit} · **{x['name']}**{grund} · {x['persons']} P. · {x['phone']}")
 
     st.subheader("Gespeicherte Korrekturen")
     try:

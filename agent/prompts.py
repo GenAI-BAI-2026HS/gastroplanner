@@ -89,9 +89,7 @@ Prognose-Annahmen (JSON):
 Anlässe (JSON):
 {anlaesse}
 
-Reservierte Personen pro Tag und Schicht (JSON). «persons» = alle Reservationen,
-«persons_zusatz» = nur Reservationen über 5 Personen; nur dieser Teil ist zusätzlich in
-«guests_planned» enthalten, kleinere Reservationen sind Teil der Prognose:
+Reservierte Personen pro Tag und Schicht, bereits in «guests_planned» enthalten (JSON):
 {reservationen}
 
 Korrekturen (JSON):
@@ -100,10 +98,13 @@ Korrekturen (JSON):
 Regeln:
 {regeln}"""
 
-KORREKTUR_PROMPT = """Wandle das Feedback der Betriebsleitung in eine Korrektur um.
-Beispiel: «Freitag Nachmittag immer einen Service mehr»
-→ weekday 4, shift nachmittag, role service, delta 1.
-Ist eine Angabe unklar, setze eindeutig=False und formuliere eine kurze Rückfrage.
+KORREKTUR_PROMPT = """Ordne das Feedback der Betriebsleitung ein.
+Meldet es Gäste, die an einem Tag kommen (z. B. «Mittwoch kommt noch Firma Müller mit
+30 Personen»), setze art=reservation und eindeutig=True; die übrigen Felder bleiben leer,
+die Reservation wird danach separat erfasst.
+Sonst ist es eine Korrektur der Besetzung (art=korrektur). Beispiel: «Freitag Nachmittag
+immer einen Service mehr» → weekday 4, shift nachmittag, role service, delta 1.
+Ist bei einer Korrektur eine Angabe unklar, setze eindeutig=False und formuliere eine kurze Rückfrage.
 
 Aktueller Plan (JSON, nur zur Orientierung):
 {plan}

@@ -6,7 +6,8 @@ einfachen Dicts testen (tests/test_routing.py).
 
 Schleifen und ihre Grenzen:
 - anlass ↔ anlass_rueckfrage: MAX_RUECKFRAGEN, danach escalate
-- reservation ↔ reservation_rueckfrage: MAX_RUECKFRAGEN, danach escalate
+- reservation ↔ reservation_rueckfrage: 2 × MAX_RUECKFRAGEN (6 Pflichtfelder), danach escalate
+- approval → korrektur → reservation → … → staffing → … → approval: zählt als «anpassen»-Runde
 - approval → korrektur → staffing → … → approval: MAX_REVISIONS, danach escalate
 - plausibility → fallback → plausibility: höchstens einmal (fallback_grund gesetzt)
 - Wiederholung bei Datenfehlern: im Node, nicht im Graphen (planung.MAX_VERSUCHE)
@@ -27,18 +28,30 @@ def route_intent(state) -> str:
             "regelfrage": "regelfrage"}.get(state.get("intent"), "reject")
 
 
+def _ende_reservation(state) -> str:
+    """Reservation ohne Speichern beendet: aus «anpassen» zurück zur Freigabe, sonst Ende."""
+    return "approval" if state.get("reservation_aus_anpassung") else "end"
+
+
 def route_after_reservation(state) -> str:
     if state.get("escalation"):
         return "escalate"
-    if state.get("reservation_vorhanden"):
-        return "end"                               # schon im System, nichts neu erfassen
+    if state.get("reservation_vorhanden") or state.get("reservation_abgelehnt"):
+        return _ende_reservation(state)            # schon im System / unter 10 Personen
     if (state.get("pending_reservation") or {}).get("vollstaendig"):
         return "reservation_bestaetigung"
     return "reservation_rueckfrage"
 
 
 def route_after_reservation_bestaetigung(state) -> str:
-    return "reservation_speichern" if state.get("decision") == "speichern" else "end"
+    if state.get("decision") == "speichern":
+        return "reservation_speichern"
+    return _ende_reservation(state)
+
+
+def route_after_reservation_speichern(state) -> str:
+    """Aus «anpassen»: mit der neuen Reservation neu rechnen und wieder zur Freigabe."""
+    return "staffing" if state.get("reservation_aus_anpassung") else "end"
 
 
 def route_after_anlass(state) -> str:
@@ -83,5 +96,8 @@ def route_after_regelfrage(state) -> str:
 
 
 def route_after_korrektur(state) -> str:
-    """Klare Korrektur → neu rechnen. Unklar → Rückfrage in der Freigabe, nichts gespeichert."""
+    """Klare Korrektur → neu rechnen. Unklar → Rückfrage in der Freigabe, nichts gespeichert.
+    Reservation im Feedback → Reservationsagent, danach neu rechnen."""
+    if state.get("reservation_aus_anpassung"):
+        return "reservation"
     return "approval" if state.get("hinweis") else "staffing"

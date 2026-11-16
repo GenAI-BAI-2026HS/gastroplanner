@@ -49,10 +49,13 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("reservation", r.route_after_reservation,
                             {"reservation_rueckfrage": "reservation_rueckfrage",
                              "reservation_bestaetigung": "reservation_bestaetigung",
-                             "escalate": "escalate", "end": END})
+                             "escalate": "escalate", "approval": "approval", "end": END})
     b.add_edge("reservation_rueckfrage", "reservation")
     b.add_conditional_edges("reservation_bestaetigung", r.route_after_reservation_bestaetigung,
-                            {"reservation_speichern": "reservation_speichern", "end": END})
+                            {"reservation_speichern": "reservation_speichern",
+                             "approval": "approval", "end": END})
+    b.add_conditional_edges("reservation_speichern", r.route_after_reservation_speichern,
+                            {"staffing": "staffing", "end": END})
     b.add_conditional_edges("regelfrage", r.route_after_regelfrage,
                             {"regel_tools": "regel_tools", "end": END})
     b.add_edge("regel_tools", "regelfrage")                # Tool-Schleife, begrenzt in regelfrage
@@ -72,9 +75,10 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("approval", r.route_after_approval,
                             {"commit": "commit", "korrektur": "korrektur",
                              "escalate": "escalate", "end": END})
-    b.add_conditional_edges("korrektur", r.route_after_korrektur, ["staffing", "approval"])
+    b.add_conditional_edges("korrektur", r.route_after_korrektur,
+                            ["staffing", "approval", "reservation"])
     b.add_edge("commit", "memory")                         # Korrekturen erst nach Freigabe speichern
-    for end_node in ("reject", "escalate", "memory", "reservation_speichern"):
+    for end_node in ("reject", "escalate", "memory"):
         b.add_edge(end_node, END)
 
     return b.compile(checkpointer=checkpointer)

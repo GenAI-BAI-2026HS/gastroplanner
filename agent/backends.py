@@ -159,9 +159,9 @@ def save_approved_plan(staffing: list[dict]) -> str:
 # --- Reservationen ------------------------------------------------------------------
 # Auch im Fixture-Modus echt (SQLite): Tests verwenden eine temporäre Datenbank.
 def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str,
-                     time: str | None = None) -> int:
+                     time: str | None = None, occasion: str | None = None) -> int:
     from tools.reservations import save_reservation as real
-    return real(name, phone, persons, date_, shift, time)
+    return real(name, phone, persons, date_, shift, time, occasion)
 
 
 def get_reservations(start_date: str | None = None, days: int | None = None) -> list[dict]:

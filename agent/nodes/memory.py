@@ -21,7 +21,7 @@ Langzeit-Memory = Tabelle corrections (gilt über alle Läufe).
 """
 import json
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 import config
 from agent import backends, llm
@@ -40,16 +40,24 @@ def korrektur(state):
         feedback=state.get("feedback") or "",
     ))])
     revisions = state.get("revisions", 0) + 1
+    if k.art == "reservation":
+        # Reservation beim Anpassen: der Reservationsagent erfasst sie (mit Rückfragen und
+        # Bestätigung), danach wird neu gerechnet (route_after_reservation → staffing).
+        return {"reservation_aus_anpassung": True, "revisions": revisions, "hinweis": None,
+                "pending_reservation": None, "reservation_versuche": 0,
+                "reservation_vorhanden": None, "reservation_abgelehnt": None,
+                "messages": [HumanMessage(state.get("feedback") or "")]}
     vollstaendig = None not in (k.weekday, k.shift, k.role, k.delta)
     # Ruhetag oder «0 Personen» würde beim Speichern nach der Freigabe scheitern
     # (tools/memory.py prüft das). Deshalb schon hier als unklar behandeln und nachfragen.
     gueltig = vollstaendig and k.weekday in config.OPEN_WEEKDAYS and k.delta != 0
     if not (k.eindeutig and gueltig):
-        return {"hinweis": k.rueckfrage or STANDARD_RUECKFRAGE, "revisions": revisions}
+        return {"hinweis": k.rueckfrage or STANDARD_RUECKFRAGE, "revisions": revisions,
+                "reservation_aus_anpassung": False}
     neu = {"weekday": k.weekday, "shift": k.shift, "role": k.role, "delta": k.delta,
            "note": k.note or state.get("feedback") or ""}
     return {"pending_corrections": [*state.get("pending_corrections", []), neu],
-            "hinweis": None, "revisions": revisions}
+            "hinweis": None, "revisions": revisions, "reservation_aus_anpassung": False}
 
 
 def memory(state):
