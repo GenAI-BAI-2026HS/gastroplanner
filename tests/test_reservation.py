@@ -66,8 +66,32 @@ def test_speichern_lesen_und_summe_ohne_namen():
     assert {x["name"]: x["phone"] for x in woche} == {"Meier": "0791234567", "Huber": "0791112233"}
     summe = res.reserved_per_shift(woche)
     assert summe == [{"date": "2026-10-30", "shift": "nachmittag", "persons": 10,
-                      "type": "Reservationen"}]
+                      "persons_zusatz": 6, "type": "Reservationen"}]          # nur Huber (6) zusätzlich
     assert "Meier" not in str(summe)                                        # keine Personendaten
+
+
+@pytest.mark.parametrize("personen, zusaetzlich", [(1, False), (4, False), (5, False),
+                                                   (6, True), (20, True)])
+def test_ueber_fuenf_personen_zusaetzlich(personen, zusaetzlich):
+    assert res.ist_zusaetzlich(personen) is zusaetzlich
+
+
+def test_als_anlaesse_nur_zusaetzlicher_teil():
+    per_shift = [{"date": "2026-10-30", "shift": "nachmittag", "persons": 10, "persons_zusatz": 6},
+                 {"date": "2026-10-31", "shift": "morgen", "persons": 4, "persons_zusatz": 0}]
+    assert res.als_anlaesse(per_shift) == [{"date": "2026-10-30", "shift": "nachmittag",
+                                            "persons": 6, "type": "Reservationen über 5 Personen"}]
+
+
+def test_finde_bestehende():
+    bestehend = [{"id": 1, "name": "Meier", "phone": "0791234567", "persons": 4,
+                  "date": "2026-10-30", "shift": "nachmittag", "time": None}]
+    basis = {"datum": "2026-10-30", "schicht": "nachmittag", "personen": 4}
+    assert res.finde_bestehende({**basis, "name": "meier"}, bestehend)[0]["id"] == 1
+    assert res.finde_bestehende({**basis, "telefon": "079 123 45 67"}, bestehend)[0]["id"] == 1
+    assert res.finde_bestehende({**basis, "name": "Huber"}, bestehend) == (None, bestehend)
+    assert res.finde_bestehende({**basis, "personen": 6}, bestehend) == (None, [])
+    assert res.finde_bestehende({**basis, "schicht": "morgen", "name": "Meier"}, bestehend) == (None, [])
 
 
 def test_reservationen_werden_zur_prognose_addiert():
@@ -79,8 +103,10 @@ def test_reservationen_werden_zur_prognose_addiert():
     assert mit["service"] == 3                                              # 70 / 30 aufgerundet
 
 
-def test_staffing_node_liest_reservationen(monkeypatch):
+def test_staffing_node_addiert_nur_reservationen_ueber_fuenf(monkeypatch):
     res.save_reservation("Meier", "0791234567", 4, "2026-10-30", "nachmittag")
+    res.save_reservation("Huber", "0791112233", 12, "2026-10-30", "nachmittag")
+    res.save_reservation("Keller", "0792223344", 3, "2026-10-31", "morgen")
     erhalten = {}
 
     def fake_staffing(forecast, events, corrections):
@@ -90,10 +116,13 @@ def test_staffing_node_liest_reservationen(monkeypatch):
     monkeypatch.setattr(backends, "calculate_staffing", fake_staffing)
     out = planung.staffing({"forecast": [], "start_date": "2026-10-26",
                             "events": [{"date": "2026-10-29", "shift": "morgen", "persons": 40}]})
-    assert {"date": "2026-10-30", "shift": "nachmittag", "persons": 4,
-            "type": "Reservationen"} in erhalten["events"]
-    assert len(erhalten["events"]) == 2                                     # Anlass bleibt
-    assert out["reservations"][0]["persons"] == 4
+    assert erhalten["events"] == [
+        {"date": "2026-10-29", "shift": "morgen", "persons": 40},          # Anlass bleibt
+        {"date": "2026-10-30", "shift": "nachmittag", "persons": 12,
+         "type": "Reservationen über 5 Personen"}]                         # Meier (4) und Keller (3) nicht
+    # Angezeigt werden trotzdem alle Reservationen
+    assert [(x["date"], x["persons"], x["persons_zusatz"]) for x in out["reservations"]] == \
+        [("2026-10-30", 16, 12), ("2026-10-31", 3, 0)]
 
 
 # --- Routing ------------------------------------------------------------------------------
@@ -175,4 +204,34 @@ def test_wochenplanung_zeigt_reservationen(fake_llm, run):
     assert interrupt_value(result)["typ"] == "freigabe"
     values = graph.get_state(cfg).values
     assert values["reservations"] == [{"date": "2026-10-30", "shift": "nachmittag",
-                                       "persons": 4, "type": "Reservationen"}]
+                                       "persons": 4, "persons_zusatz": 0, "type": "Reservationen"}]
+
+
+def test_bestehende_reservation_wird_nicht_doppelt_erfasst(fake_llm, run):
+    backends.save_reservation("Meier", "0791234567", 4, "2026-10-30", "nachmittag", "19:00")
+    fake_llm(Guard=OK, Route=RES, Reservation=VOLL)
+    _, _, result = run("Meier kommt Freitag um 19 Uhr zu viert")
+
+    assert "__interrupt__" not in result                                    # keine Bestätigung nötig
+    assert "bereits im System" in result["messages"][-1].content
+    assert len(backends.get_reservations()) == 1
+
+
+def test_gleiche_personenzahl_ohne_name_fragt_nach(fake_llm, run):
+    backends.save_reservation("Meier", "0791234567", 4, "2026-10-30", "nachmittag")
+    fake_llm(Guard=OK, Route=RES,
+             Reservation=[VOLL.model_copy(update={"name": None, "telefon": None}),
+                          Reservation(name="Huber", telefon="078 555 66 77")])
+    graph, cfg, result = run("Freitag 19 Uhr kommen 4 Personen")
+
+    frage = interrupt_value(result)["frage"]
+    assert "bereits eine Reservation" in frage and "Meier" in frage and "Namen" in frage
+    result = graph.invoke(Command(resume="Nein, neu: Huber, 078 555 66 77"), cfg)
+    assert interrupt_value(result)["typ"] == "reservation"                  # neue Reservation
+    assert "nicht zusätzlich eingeplant" in interrupt_value(result)["hinweis"]
+
+
+def test_grosse_reservation_hinweis_zusaetzlich(fake_llm, run):
+    fake_llm(Guard=OK, Route=RES, Reservation=VOLL.model_copy(update={"personen": 20}))
+    _, _, result = run("Gruppe Meier, 20 Personen, Freitag 19 Uhr, 079 123 45 67")
+    assert "zusätzlich zur Gästeprognose" in interrupt_value(result)["hinweis"]

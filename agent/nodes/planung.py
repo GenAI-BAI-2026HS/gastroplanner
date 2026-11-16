@@ -21,7 +21,7 @@ import config
 from agent import backends
 from agent.mcp_client import MCPToolError
 from agent.nodes import supervisor
-from tools.reservations import reserved_per_shift
+from tools.reservations import als_anlaesse, reserved_per_shift
 
 DAYS = config.HORIZON_DAYS
 WETTER_TAGE = 16        # Open-Meteo: Prognose für heute und die nächsten 15 Tage
@@ -114,11 +114,13 @@ def staffing(state):
     Korrekturen aus diesem Lauf. Gespeichert wird erst nach der Freigabe (nodes/memory.py).
 
     Reservationen (Tabelle reservations) im Planungshorizont werden pro Tag und Schicht
-    summiert und wie Anlässe zur Prognose addiert. Ins State kommen nur die Summen, keine
-    Namen oder Telefonnummern.
+    summiert. Nur Reservationen über 5 Personen werden wie Anlässe zur Prognose addiert;
+    kleinere sind in der Prognose enthalten (config.RESERVATION_ZUSATZ_AB). Ins State kommen
+    nur die Summen, keine Namen oder Telefonnummern.
     """
     corrections = backends.get_corrections() + list(state.get("pending_corrections", []))
     reservations = reserved_per_shift(backends.get_reservations(state["start_date"], DAYS))
     plan = backends.calculate_staffing(state["forecast"],
-                                       state.get("events", []) + reservations, corrections)
+                                       state.get("events", []) + als_anlaesse(reservations),
+                                       corrections)
     return {"staffing": plan, "corrections": corrections, "reservations": reservations}

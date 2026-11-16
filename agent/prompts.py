@@ -34,13 +34,13 @@ REJECT_TEXT = ("Dabei kann ich leider nicht helfen. Ich unterstütze Sie bei der
 
 SUPERVISOR_PROMPT = """Erkenne die Absicht der letzten Nachricht und extrahiere ein Startdatum,
 falls eines genannt ist. Heute ist {heute} ({wochentag}).
-Wenn die Person einen Anlass meldet (z. B. «Donnerstag Firmenlunch, 40 Personen»),
-ist die Absicht «anlass», auch wenn sie zusätzlich um einen Plan bittet.
-Will die Person etwas reservieren oder spricht sie von einer Reservation (z. B. «Reservation
-auf Meier, 4 Personen, Freitag 19 Uhr» oder «Am Mittwoch kommt eine Gruppe von 20 Personen,
-mache die Reservation»), ist die Absicht «reservation», auch ohne Name oder Telefonnummer;
-diese werden danach erfragt. «anlass» nur, wenn ein Ereignis gemeldet wird, ohne dass von
-Reservation oder reservieren die Rede ist."""
+«reservation»: Bestimmte Gäste kommen an einem Tag ins Restaurant, also eine Reservation,
+auch wenn sie nur angedeutet ist und das Wort fehlt. Beispiele: «Reservation auf Meier,
+4 Personen, Freitag 19 Uhr», «Am Mittwoch kommt eine Gruppe von 20 Personen»,
+«Donnerstag Firmenlunch, 40 Personen», «Familie Huber kommt Samstag zu sechst».
+Name und Telefonnummer werden danach erfragt. Gilt auch, wenn zusätzlich ein Plan gewünscht ist.
+«anlass»: nur ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb bringt,
+z. B. «Am Samstag ist Stadtfest, rechne mit 60 Gästen mehr»."""
 
 RESERVATION_PROMPT = """Extrahiere die Tischreservation aus dem Gespräch. Heute ist {heute} ({wochentag}).
 Bereits bekannte Angaben: {bekannt}
@@ -89,7 +89,9 @@ Prognose-Annahmen (JSON):
 Anlässe (JSON):
 {anlaesse}
 
-Reservierte Personen pro Tag und Schicht, bereits in «guests_planned» enthalten (JSON):
+Reservierte Personen pro Tag und Schicht (JSON). «persons» = alle Reservationen,
+«persons_zusatz» = nur Reservationen über 5 Personen; nur dieser Teil ist zusätzlich in
+«guests_planned» enthalten, kleinere Reservationen sind Teil der Prognose:
 {reservationen}
 
 Korrekturen (JSON):

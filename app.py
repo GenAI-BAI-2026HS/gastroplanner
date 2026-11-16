@@ -104,16 +104,18 @@ def ausfuehren(eingabe) -> None:
 def plan_tabelle(plan: list[dict], forecast: list[dict] | None,
                  reservations: list[dict] | None = None) -> pd.DataFrame:
     spanne = {(f["date"], f["shift"]): f for f in forecast or []}
-    reserviert = {(x["date"], x["shift"]): x["persons"] for x in reservations or []}
+    reserviert = {(x["date"], x["shift"]): x for x in reservations or []}
     zeilen = []
     for r in plan:
         f = spanne.get((r["date"], r["shift"]))
+        res = reserviert.get((r["date"], r["shift"]), {})
         d = pd.Timestamp(r["date"])
         zeilen.append({
             "Tag": f"{WOCHENTAGE[d.weekday()][:2]} {d.strftime('%d.%m.')}",
             "Schicht": r["shift"].capitalize(),
             "Gäste (Spanne)": f"{f['guests']} ({f['lower']}–{f['upper']})" if f else "–",
-            "Reserviert": reserviert.get((r["date"], r["shift"]), 0),
+            "Reserviert": res.get("persons", 0),
+            "davon zusätzlich": res.get("persons_zusatz", 0),   # nur Reservationen über 5 P.
             "Geplant für": r["guests_planned"],
             "Küche": r["kueche"], "Service": r["service"], "Abwasch": r["abwasch"],
             "Regeln": ", ".join(r.get("rule_refs", [])),
@@ -156,9 +158,10 @@ def annahmen(state: dict) -> None:
                 st.markdown(f"- {e.get('date')} {e.get('shift')}: {e.get('persons')} Personen "
                             f"({e.get('type', 'Anlass')})")
         if state.get("reservations"):
-            st.markdown("**Reservationen** (zur Prognose addiert)")
+            st.markdown("**Reservationen** (nur über 5 Personen zusätzlich zur Prognose)")
             for x in state["reservations"]:
-                st.markdown(f"- {x['date']} {x['shift']}: {x['persons']} Personen")
+                st.markdown(f"- {x['date']} {x['shift']}: {x['persons']} Personen reserviert, "
+                            f"davon {x.get('persons_zusatz', 0)} zusätzlich eingeplant")
         if state.get("corrections"):
             st.markdown("**Angewendete Korrekturen**")
             for c in state["corrections"]:
@@ -223,6 +226,8 @@ def reservation_bestaetigen(payload: dict) -> None:
             "Datum": f"{WOCHENTAGE[d.weekday()]} {d.strftime('%d.%m.%Y')}",
             "Uhrzeit": r.get("uhrzeit") or "–", "Schicht": r["schicht"].capitalize(),
         }]).set_index("Name"))
+        if payload.get("hinweis"):
+            st.caption(payload["hinweis"])
         a, b = st.columns(2)
         if a.button("Reservation speichern", type="primary", width="stretch"):
             st.session_state.verlauf.append({"role": "user", "content": "Reservation speichern"})

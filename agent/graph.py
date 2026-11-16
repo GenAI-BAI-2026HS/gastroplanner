@@ -47,7 +47,9 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("supervisor", r.route_intent,
                             ["context", "anlass", "reservation", "regelfrage", "reject"])
     b.add_conditional_edges("reservation", r.route_after_reservation,
-                            ["reservation_rueckfrage", "reservation_bestaetigung", "escalate"])
+                            {"reservation_rueckfrage": "reservation_rueckfrage",
+                             "reservation_bestaetigung": "reservation_bestaetigung",
+                             "escalate": "escalate", "end": END})
     b.add_edge("reservation_rueckfrage", "reservation")
     b.add_conditional_edges("reservation_bestaetigung", r.route_after_reservation_bestaetigung,
                             {"reservation_speichern": "reservation_speichern", "end": END})
