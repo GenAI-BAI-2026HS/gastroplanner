@@ -12,6 +12,10 @@ graph TD;
 	regel_tools(regel_tools<hr/><small><em>__tools = regeln_suchen</em></small>)
 	anlass(anlass)
 	anlass_rueckfrage(anlass_rueckfrage)
+	reservation(reservation)
+	reservation_rueckfrage(reservation_rueckfrage)
+	reservation_bestaetigung(reservation_bestaetigung)
+	reservation_speichern(reservation_speichern)
 	context(context)
 	forecast(forecast)
 	plausibility(plausibility)
@@ -44,6 +48,7 @@ graph TD;
 	guard -.-> reject;
 	guard -.-> supervisor;
 	korrektur -.-> approval;
+	korrektur -.-> reservation;
 	korrektur -.-> staffing;
 	plausibility -.-> escalate;
 	plausibility -.-> fallback;
@@ -51,11 +56,23 @@ graph TD;
 	regel_tools --> regelfrage;
 	regelfrage -. &nbsp;end&nbsp; .-> __end__;
 	regelfrage -.-> regel_tools;
+	reservation -. &nbsp;end&nbsp; .-> __end__;
+	reservation -.-> approval;
+	reservation -.-> escalate;
+	reservation -.-> reservation_bestaetigung;
+	reservation -.-> reservation_rueckfrage;
+	reservation_bestaetigung -. &nbsp;end&nbsp; .-> __end__;
+	reservation_bestaetigung -.-> approval;
+	reservation_bestaetigung -.-> reservation_speichern;
+	reservation_rueckfrage --> reservation;
+	reservation_speichern -. &nbsp;end&nbsp; .-> __end__;
+	reservation_speichern -.-> staffing;
 	staffing --> explain;
 	supervisor -.-> anlass;
 	supervisor -.-> context;
 	supervisor -.-> regelfrage;
 	supervisor -.-> reject;
+	supervisor -.-> reservation;
 	escalate --> __end__;
 	memory --> __end__;
 	reject --> __end__;

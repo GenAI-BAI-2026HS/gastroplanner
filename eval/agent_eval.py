@@ -11,6 +11,7 @@ Was gemessen wird (Projektplan C6), pro Fall:
                      Antwort, Ablehnung, Eskalation)?
   intent_korrekt     Hat der Supervisor die Absicht richtig erkannt?
   anlass_korrekt     Wurden Datum, Schicht und Personen des Anlasses richtig erfasst?
+  reservation_korrekt  Wurden Personen, Datum und Schicht der Reservation richtig erfasst?
   quelle_korrekt     Nennt die Antwort die richtige Regel, und nur Regeln, die die Suche
                      wirklich geliefert hat (keine erfundenen Quellen)?
   zahlen_aus_tools   Stammen alle Zahlen im Text aus den Tools (Prognose, Besetzung,
@@ -47,7 +48,7 @@ from agent.state import initial_state
 from eval.testset import FAELLE
 
 HEUTE = date(2026, 10, 25)          # Sonntag vor der Fixture-Woche (ab 26.10.)
-DATASET = "gastroplanner-testset"
+DATASET = "gastroplanner-testset-v2"   # v2: 16 Fälle mit Reservationen
 ERGEBNIS_DATEI = Path(__file__).with_name("ergebnisse_agent.md")
 QUELLE_RE = re.compile(r"\[([\w-]+\.md) · ([^\]]+)\]")
 
@@ -137,6 +138,8 @@ def run_case(inputs: dict) -> dict:
         "eingabe": inputs["eingabe"],
         "text": text or "",
         "events": state.get("events") or [],
+        "reservation": {k: v for k, v in (state.get("pending_reservation") or {}).items()
+                        if k in ("personen", "datum", "schicht")},
         "rule_sources": state.get("rule_sources") or [],
         "tool_daten": _tool_daten(state),
         "dauer_s": round(dauer, 2),
@@ -146,9 +149,12 @@ def run_case(inputs: dict) -> dict:
 
 def ergebnis_aus(state: dict, payload: dict | None) -> str:
     if payload:
-        return {"freigabe": "plan_zur_freigabe", "rueckfrage": "rueckfrage"}.get(payload.get("typ"), "sonstiges")
+        return {"freigabe": "plan_zur_freigabe", "rueckfrage": "rueckfrage",
+                "reservation": "reservation_zur_bestaetigung"}.get(payload.get("typ"), "sonstiges")
     if state.get("escalation"):
         return "eskaliert"
+    if state.get("reservation_abgelehnt") == "unter_minimum":
+        return "unter_minimum"
     if state.get("allowed") is False or state.get("intent") == "themenfremd":
         return "abgelehnt"
     if state.get("intent") == "regelfrage":
@@ -159,7 +165,8 @@ def ergebnis_aus(state: dict, payload: dict | None) -> str:
 def _tool_daten(state: dict) -> str:
     """Alles, was aus Tools kam, als Text: Daraus dürfen Zahlen im Text stammen."""
     teile = {k: state.get(k) for k in ("forecast", "staffing", "events", "corrections",
-                                         "context", "fallback_grund", "start_date")}
+                                         "context", "fallback_grund", "start_date",
+                                         "reservations", "pending_reservation")}
     teile["regeln"] = [h["text"] + " " + h["section"] for h in state.get("rule_sources") or []]
     return json.dumps(teile, ensure_ascii=False, default=str)
 
@@ -185,6 +192,15 @@ def anlass_korrekt(outputs: dict, reference_outputs: dict) -> dict:
         return {"key": "anlass_korrekt", "score": None}
     treffer = any(all(e.get(k) == v for k, v in erwartet.items()) for e in outputs.get("events", []))
     return {"key": "anlass_korrekt", "score": int(treffer), "comment": str(outputs.get("events"))}
+
+
+def reservation_korrekt(outputs: dict, reference_outputs: dict) -> dict:
+    erwartet = reference_outputs.get("reservation")
+    if erwartet is None:
+        return {"key": "reservation_korrekt", "score": None}
+    erhalten = outputs.get("reservation") or {}
+    treffer = all(erhalten.get(k) == v for k, v in erwartet.items())
+    return {"key": "reservation_korrekt", "score": int(treffer), "comment": str(erhalten)}
 
 
 def quelle_korrekt(outputs: dict, reference_outputs: dict) -> dict:
@@ -214,7 +230,8 @@ def _zahlen(text: str) -> set[int]:
     return {int(z) for z in re.findall(r"\d+", text)}
 
 
-EVALUATOREN = [ergebnis_korrekt, intent_korrekt, anlass_korrekt, quelle_korrekt, zahlen_aus_tools]
+EVALUATOREN = [ergebnis_korrekt, intent_korrekt, anlass_korrekt, reservation_korrekt,
+               quelle_korrekt, zahlen_aus_tools]
 
 
 # --- Lokal auswerten ------------------------------------------------------------------------
@@ -229,7 +246,7 @@ def lokal(faelle: list[dict] = FAELLE) -> list[dict]:
             outputs = run_case({**fall, "eingabe": fall["eingabe"]})
         except Exception as e:                       # Fehler zählen als nicht bestanden
             outputs = {"ergebnis": f"fehler: {type(e).__name__}", "intent": None, "text": str(e),
-                       "events": [], "rule_sources": [], "tool_daten": "", "dauer_s": 0, "tokens": 0}
+                       "events": [], "reservation": {}, "rule_sources": [], "tool_daten": "", "dauer_s": 0, "tokens": 0}
         zeilen.append({"fall": fall, "outputs": outputs, "bewertung": bewerten(fall, outputs)})
         print(_zeile(zeilen[-1]))
     return zeilen
@@ -249,7 +266,7 @@ def zusammenfassung(zeilen: list[dict]) -> dict:
 
 
 def als_markdown(zeilen: list[dict]) -> str:
-    kurz = ["ergebnis", "intent", "anlass", "quelle", "zahlen"]
+    kurz = ["ergebnis", "intent", "anlass", "reservation", "quelle", "zahlen"]
     out = ["# Ergebnisse Agenten-Evaluation", "",
            f"Stand: {date.today().isoformat()} · Fälle: {len(zeilen)} · Testumgebung: "
            "echtes LLM, Prognose/Wetter/Kalender aus Beispieldaten, Besetzung/RAG/Memory echt", "",
@@ -277,7 +294,7 @@ def _symbol(score) -> str:
 
 def _zeile(z: dict) -> str:
     b = " ".join(_symbol(r["score"]) for r in z["bewertung"].values())
-    return f"{z['fall']['id']:<3} {z['outputs']['ergebnis']:<18} {b}  {z['outputs']['dauer_s']} s"
+    return f"{z['fall']['id']:<3} {z['outputs']['ergebnis']:<29} {b}  {z['outputs']['dauer_s']} s"
 
 
 # --- LangSmith --------------------------------------------------------------------------------
@@ -287,7 +304,7 @@ def langsmith_experiment():
 
     client = Client()
     if not client.has_dataset(dataset_name=DATASET):
-        ds = client.create_dataset(DATASET, description="Gastroplanner: 13 Testfälle (C6)")
+        ds = client.create_dataset(DATASET, description="Gastroplanner: 16 Testfälle mit Reservationen (C6)")
         client.create_examples(
             dataset_id=ds.id,
             inputs=[{"id": f["id"], "eingabe": f["eingabe"], "simuliere": f.get("simuliere")} for f in FAELLE],
@@ -316,7 +333,7 @@ def main() -> None:
         raise SystemExit(f"Bitte in .env eintragen: {', '.join(fehlt)} (Vorlage: .env.example)")
     if args.langsmith:
         langsmith_experiment()
-        print("Experiment in LangSmith gestartet: Projekt «Datasets & Experiments» → gastroplanner-testset")
+        print("Experiment in LangSmith gestartet: Projekt «Datasets & Experiments» → " + DATASET)
         return
     zeilen = lokal()
     ERGEBNIS_DATEI.write_text(als_markdown(zeilen), encoding="utf-8")

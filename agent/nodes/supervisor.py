@@ -20,6 +20,18 @@ def naechster_montag(tag: date | None = None) -> str:
     return (tag + timedelta(days=(7 - tag.weekday()) % 7 or 7)).isoformat()
 
 
+def wochenstart(start_date: str) -> str:
+    """Geplant wird immer eine ganze Woche ab Montag.
+
+    Nennt die Person einen Tag mitten in der Woche (z. B. «Donnerstag Firmenlunch»), gilt
+    der Montag dieser Woche, sofern er nicht in der Vergangenheit liegt. Sonst bleibt das
+    Datum (die laufende Woche wird ab dem genannten Tag geplant).
+    """
+    tag = date.fromisoformat(start_date)
+    montag = tag - timedelta(days=tag.weekday())
+    return montag.isoformat() if montag > heute() else start_date
+
+
 def datum_kontext() -> dict:
     t = heute()
     return {"heute": t.isoformat(), "wochentag": WOCHENTAGE[t.weekday()]}
@@ -31,5 +43,6 @@ def supervisor(state):
         SystemMessage(SUPERVISOR_PROMPT.format(**datum_kontext())),
         *state["messages"][-6:],
     ])
-    # Das Standarddatum rechnet Python, nicht das LLM (Grundprinzip «LLM rechnet nie»)
-    return {"intent": route.intent, "start_date": route.start_date or naechster_montag()}
+    # Standarddatum und Wochenstart rechnet Python, nicht das LLM (Grundprinzip «LLM rechnet nie»)
+    start = wochenstart(route.start_date) if route.start_date else naechster_montag()
+    return {"intent": route.intent, "start_date": start}

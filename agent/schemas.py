@@ -27,7 +27,9 @@ class Route(BaseModel):
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
     start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "
-                                   "Person ein Datum oder eine Woche nennt. Sonst null.")
+                                   "Person ein konkretes Datum oder einen Wochentag nennt. "
+                                   "Bei «nächste Woche», «kommende Woche» oder ohne Angabe "
+                                   "null (dann gilt der nächste Montag).")
 
 
 class Anlass(BaseModel):
@@ -37,10 +39,11 @@ class Anlass(BaseModel):
                               "Null, wenn kein Datum genannt ist.")
     schicht: Schicht | None = Field(None, description="morgen (08–14 Uhr) oder nachmittag "
                                     "(14–20 Uhr). Mittag/Lunch = morgen. Null, wenn unklar.")
-    personen: int | None = Field(None, description="Erwartete Anzahl Gäste des Anlasses. "
+    personen: int | None = Field(None, description="Zusätzliche Gäste durch den Anlass. "
+                                 "'Rechne mit 40 Gästen mehr' oder '40 zusätzliche Gäste' → 40. "
                                  "Null, wenn keine Zahl genannt ist.")
-    art: str | None = Field(None, description="Art des Anlasses, z. B. Firmenlunch, Apéro, "
-                            "Gruppenreservation.")
+    art: str | None = Field(None, description="Art des Anlasses, z. B. Stadtfest, Markt, "
+                            "Konzert, Apéro.")
 
 
 class Reservation(BaseModel):

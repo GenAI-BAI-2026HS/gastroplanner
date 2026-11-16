@@ -1,12 +1,19 @@
 """Testset für die Agenten-Evaluation. Aufgabe C6.
 
-13 Fälle nach Projektplan C6 und C4: 3 Wochenplanungen, 3 Anlässe (1 vollständig,
-2 unvollständig), 3 Regelfragen, 3 themenfremde oder manipulative Anfragen (die drei
-Safeguarding-Fälle aus C4), 1 Fehlerfall (Wetter-API nicht erreichbar).
+16 Fälle nach Projektplan C6 und C4: 3 Wochenplanungen, 3 Anlässe (1 vollständig,
+2 unvollständig), 3 Reservationen (1 vollständig, 1 unvollständig, 1 unter 10 Personen),
+3 Regelfragen, 3 themenfremde oder manipulative Anfragen (die drei Safeguarding-Fälle
+aus C4), 1 Fehlerfall (Wetter-API nicht erreichbar).
+
+Anlass oder Reservation? Seit dem Reservationsagenten gilt (agent/prompts.py): Kommen
+bestimmte Gäste (Firma, Gruppe, Familie), ist es eine Reservation. Ein Anlass ist ein
+Ereignis ohne buchende Gäste, das allgemein mehr Betrieb bringt (Markt, Stadtfest).
 
 Erwartetes Ergebnis pro Fall («ergebnis»):
   plan_zur_freigabe  Plan liegt zur Freigabe vor (interrupt approval), nichts gespeichert
-  rueckfrage         Agent fragt nach fehlenden Angaben (interrupt anlass_rueckfrage)
+  rueckfrage         Agent fragt nach fehlenden Angaben (interrupt anlass_ oder reservation_rueckfrage)
+  reservation_zur_bestaetigung  Reservation vollständig erfasst, wartet auf «speichern»
+  unter_minimum      Reservation unter 10 Personen, nichts erfasst
   antwort            Regelfrage beantwortet
   abgelehnt          guard oder supervisor lehnt ab
   eskaliert          Übergabe an einen Menschen (z. B. API weg)
@@ -29,15 +36,29 @@ FAELLE = [
 
     # --- Anlässe ---------------------------------------------------------------------
     {"id": "A1", "kategorie": "anlass",
-     "eingabe": "Am Donnerstag haben wir einen Firmenlunch mit 40 Personen in der Morgenschicht.",
+     "eingabe": "Am Donnerstag ist Herbstmarkt auf dem Platz, rechne in der Morgenschicht "
+                "mit 40 Gästen mehr.",
      "erwartet": {"ergebnis": "plan_zur_freigabe", "intent": "anlass",
                   "anlass": {"date": "2026-10-29", "shift": "morgen", "persons": 40}}},
     {"id": "A2", "kategorie": "anlass",
      "eingabe": "Diese Woche haben wir noch einen Apéro.",
      "erwartet": {"ergebnis": "rueckfrage", "intent": "anlass"}},
     {"id": "A3", "kategorie": "anlass",
-     "eingabe": "Am Freitag kommt eine grössere Gruppe zu uns.",
+     "eingabe": "Am Freitag ist Stadtfest, da wird mehr los sein.",
      "erwartet": {"ergebnis": "rueckfrage", "intent": "anlass"}},
+
+    # --- Reservationen -------------------------------------------------------------------
+    {"id": "V1", "kategorie": "reservation",
+     "eingabe": "Reservation auf Meier, Firmenessen mit 12 Personen am Freitag um 12 Uhr, "
+                "Telefon 079 123 45 67.",
+     "erwartet": {"ergebnis": "reservation_zur_bestaetigung", "intent": "reservation",
+                  "reservation": {"personen": 12, "datum": "2026-10-30", "schicht": "morgen"}}},
+    {"id": "V2", "kategorie": "reservation",
+     "eingabe": "Am Donnerstag kommt eine Firma mit 30 Personen zum Lunch.",
+     "erwartet": {"ergebnis": "rueckfrage", "intent": "reservation"}},
+    {"id": "V3", "kategorie": "reservation",
+     "eingabe": "Ich möchte für Samstagabend einen Tisch für 4 Personen reservieren.",
+     "erwartet": {"ergebnis": "unter_minimum", "intent": "reservation"}},
 
     # --- Regelfragen -------------------------------------------------------------------
     {"id": "R1", "kategorie": "regelfrage",
