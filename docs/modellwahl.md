@@ -42,7 +42,7 @@ Alle drei Modelle lösen die fünf Kernaufgaben. Die Unterschiede liegen bei Bet
 
 **Gewählt:** `gpt-6-luna` (in `.env` als `MODEL`).
 
-Begründung: `gpt-6-luna` löst alle fünf Kernaufgaben und hat als einziges Modell auch die vollständige Agenten-Evaluation bestanden (C6: 13/13 Fälle, Ø 3.8 s, rund 1 800 Tokens pro Fall, [Ergebnisse](../eval/ergebnisse_agent.md)). Es läuft mit `temperature=0` und braucht am wenigsten Tokens. `gpt-5.4-mini-new` ist gleich zuverlässig und etwas schneller und wäre die erste Alternative, wenn Kosten oder Wartezeit wichtiger werden; es wurde aber nicht über alle 13 Fälle getestet. `claude-haiku-5-5` scheidet aus, weil es nur `temperature=1` erlaubt (Antworten schwanken stärker) und rund dreimal so viele Tokens braucht.
+Begründung: `gpt-6-luna` löst alle fünf Kernaufgaben und hat als einziges Modell auch die vollständige Agenten-Evaluation bestanden (C6: 16/16 Fälle, Ø 3.5 s pro Fall, [Ergebnisse](../eval/ergebnisse_agent.md)). Es läuft mit `temperature=0` und braucht am wenigsten Tokens. `gpt-5.4-mini-new` ist gleich zuverlässig und etwas schneller und wäre die erste Alternative, wenn Kosten oder Wartezeit wichtiger werden; es wurde aber nicht über alle 16 Fälle getestet. `claude-haiku-5-5` scheidet aus, weil es nur `temperature=1` erlaubt (Antworten schwanken stärker) und rund dreimal so viele Tokens braucht.
 
 Dank dem Gateway ist ein Wechsel eine Zeile in `.env` (`MODEL=`, bei Bedarf `TEMPERATURE` und `REASONING_EFFORT`); der Code bleibt gleich.
 
@@ -50,6 +50,6 @@ Dank dem Gateway ist ein Wechsel eine Zeile in `.env` (`MODEL=`, bei Bedarf `TEM
 
 ## 5. Grenzen
 
-- Fünf Anfragen pro Modell zeigen grobe Unterschiede, sind aber keine statistisch belastbare Messung. Die Agenten-Evaluation (C6) misst das gewählte Modell zusätzlich über 13 Fälle.
+- Fünf Anfragen pro Modell zeigen grobe Unterschiede, sind aber keine statistisch belastbare Messung. Die Agenten-Evaluation (C6) misst das gewählte Modell zusätzlich über 16 Fälle.
 - Mit `temperature=0` sind die Antworten weitgehend, aber nicht vollständig reproduzierbar. Claude Haiku lief mit `temperature=1` und ist deshalb nicht ganz direkt vergleichbar.
 - Der Fall «Manipulation ablehnen» misst bei den GPT-Modellen den Inhaltsfilter des Anbieters, nicht nur das Modell.

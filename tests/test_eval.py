@@ -2,7 +2,7 @@
 from collections import Counter
 
 from agent import backends
-from agent.schemas import Anlass, Guard, Route
+from agent.schemas import Anlass, Guard, Reservation, Route
 from eval import agent_eval as ev
 from eval.rag_eval import auswerten
 from eval.testset import FAELLE
@@ -23,7 +23,7 @@ def bewerte(fid, outputs):
 # --- Testset ----------------------------------------------------------------------------
 def test_testset_wie_im_projektplan():
     anzahl = Counter(f["kategorie"] for f in FAELLE)
-    assert anzahl == {"wochenplanung": 3, "anlass": 3, "regelfrage": 3,
+    assert anzahl == {"wochenplanung": 3, "anlass": 3, "reservation": 3, "regelfrage": 3,
                       "safeguarding": 3, "fehlerfall": 1}
     assert len({f["id"] for f in FAELLE}) == len(FAELLE)
     assert sorted(f["erwartet"]["ergebnis"] for f in FAELLE if f["kategorie"] == "anlass") == \
@@ -43,7 +43,8 @@ def test_wochenplanung(fake_llm):
     out = ev.run_case(fall("W1"))
     assert out["ergebnis"] == "plan_zur_freigabe"
     assert bewerte("W1", out) == {"ergebnis_korrekt": 1, "intent_korrekt": 1, "anlass_korrekt": None,
-                                  "quelle_korrekt": None, "zahlen_aus_tools": 1}
+                                  "reservation_korrekt": None, "quelle_korrekt": None,
+                                  "zahlen_aus_tools": 1}
 
 
 def test_anlass_vollstaendig_mit_echter_besetzung(fake_llm):
@@ -53,6 +54,23 @@ def test_anlass_vollstaendig_mit_echter_besetzung(fake_llm):
     assert out["ergebnis"] == "plan_zur_freigabe"
     assert bewerte("A1", out)["anlass_korrekt"] == 1
     assert '"guests_planned": ' in out["tool_daten"]
+
+
+def test_reservation_vollstaendig_wartet_auf_bestaetigung(fake_llm):
+    fake_llm(Guard=OK, Route=Route(intent="reservation"),
+             Reservation=Reservation(name="Meier", telefon="079 123 45 67", personen=12,
+                                     datum="2026-10-30", uhrzeit="12:00", grund="Firmenessen"))
+    out = ev.run_case(fall("V1"))
+    assert out["ergebnis"] == "reservation_zur_bestaetigung"
+    assert bewerte("V1", out)["reservation_korrekt"] == 1
+
+
+def test_reservation_unter_minimum(fake_llm):
+    fake_llm(Guard=OK, Route=Route(intent="reservation"),
+             Reservation=Reservation(personen=4, datum="2026-10-31", schicht="nachmittag"))
+    out = ev.run_case(fall("V3"))
+    assert out["ergebnis"] == "unter_minimum"
+    assert bewerte("V3", out)["ergebnis_korrekt"] == 1
 
 
 def test_anlass_unvollstaendig_fuehrt_zu_rueckfrage(fake_llm):
@@ -122,7 +140,8 @@ def test_nicht_anwendbar_ist_none():
            "events": [], "rule_sources": [], "tool_daten": ""}
     b = ev.bewerten(fall("S1"), out)
     assert [k for k, v in b.items() if v["score"] is None] == \
-        ["intent_korrekt", "anlass_korrekt", "quelle_korrekt", "zahlen_aus_tools"]
+        ["intent_korrekt", "anlass_korrekt", "reservation_korrekt", "quelle_korrekt",
+         "zahlen_aus_tools"]
 
 
 def test_bericht_zaehlt_nur_anwendbare():

@@ -1,6 +1,6 @@
 # Konzept: Restaurant-Personalplanungsagent
 
-Stand: 13.11.2026 · ersetzt das frühere Konzept (Personal- und Einkaufsplanung, siehe `daten/`, `Skizze/`) · Bezug: Projektplan vom 19.10.2026
+Stand: 16.11.2026 · ersetzt das frühere Konzept (Personal- und Einkaufsplanung, siehe `daten/`, `Skizze/`) · Bezug: Projektplan vom 19.10.2026
 
 ## 1. Problem
 
@@ -44,6 +44,7 @@ Ein LLM-Orchestrator holt Wetterprognose, Feiertage und Schulferien, lässt ein 
 | US6 | … einen Plan freigeben, anpassen oder ablehnen | nichts ohne mein Einverständnis gilt | B5 approval/commit |
 | US7 | … eine dauerhafte Korrektur angeben («Freitagnachmittag immer einen Service mehr») | ich sie nicht jede Woche wiederholen muss | C5 Memory |
 | US8 | … bei fehlenden Daten (Wetterdienst nicht erreichbar) informiert werden statt einen erfundenen Plan zu bekommen | ich mich auf den Plan verlassen kann | Eskalation, Fallback |
+| US10 | … eine Tischreservation ab 10 Personen in einem Satz erfassen und bei fehlenden Angaben gefragt werden | reservierte Gäste in der Planung zusätzlich eingeplant sind | Reservationsagent (reservation + Rückfrage + Bestätigung) |
 | US9 | … dass der Assistent bei themenfremden oder manipulativen Anfragen ablehnt und nichts über einzelne Mitarbeitende urteilt | das System im Rahmen bleibt | C4 guard |
 
 ## 4. Prozess
@@ -86,10 +87,13 @@ Das vollständige Graph-Bild steht in [graph.png](graph.png) (Quelle: [graph.mmd
 | Regelfragen mit richtiger Quelle | Hit@3 der Regelsuche | 92 % (BM25), [Ergebnisse](../eval/ergebnisse_rag.md) | erfüllt |
 | Nichts ohne Freigabe | Test: Lauf ohne Freigabe schreibt nichts in `approved_plans` | `tests/test_graph.py`, `tests/test_app.py` | erfüllt |
 | Anlass mit Rückfrage | 1 vollständiger, 2 unvollständige Anlässe | A1 Plan mit richtig erfasstem Anlass, A2–A3 Rückfrage, [Ergebnisse](../eval/ergebnisse_agent.md) | erfüllt |
+| Reservation | 1 vollständige, 1 unvollständige Reservation, 1 unter 10 Personen | V1 zur Bestätigung mit richtig erfassten Angaben, V2 Rückfrage, V3 abgelehnt, [Ergebnisse](../eval/ergebnisse_agent.md) | erfüllt |
 | Safeguarding | 3 manipulative/themenfremde Anfragen werden abgelehnt | 3/3 abgelehnt (S3 schon vom Inhaltsfilter des Anbieters) | erfüllt |
 | Zahlen nur aus Tools | Evaluator `zahlen_aus_tools` | 7/7 Antworten ohne Zahl ohne Quelle | erfüllt |
-| Nachvollziehbar | Trace in LangSmith | Traces im LangSmith-Projekt `gastroplanner`, Experiment `gastroplanner-testset` | erfüllt |
+| Nachvollziehbar | Trace in LangSmith | Traces im LangSmith-Projekt `gastroplanner`, Dataset `gastroplanner-testset-v2` | erfüllt |
 
 ## 6. Abgrenzung zum früheren Konzept
 
 Das erste Konzept sah zusätzlich einen Einkaufsplan («Personal- und Einkaufsplan», «Einkaufsbedarf» bei Anlässen) und ein Mehragentensystem vor. Der Projektplan vom 19.10.2026 beschränkt die Lösung auf die Personalplanung, damit der Kern in der verfügbaren Zeit sauber gebaut, getestet und evaluiert werden kann. Einkauf und Lager bleiben eine mögliche Ausbaustufe; die Architektur (Supervisor mit weiteren Pfaden) liesse das zu.
+
+Nach dem ersten Code-Freeze kam als zusätzlicher Pfad ein Reservationsagent dazu (16.11.2026). Seither gilt: Kommen bestimmte Gäste (Firma, Gruppe, Familie), ist es eine Reservation mit Name und Telefonnummer; ein Anlass ist ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb bringt (Markt, Stadtfest). Das Testset wurde entsprechend angepasst und um drei Reservationsfälle ergänzt.
