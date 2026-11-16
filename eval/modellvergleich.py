@@ -67,10 +67,9 @@ def _faelle():
 
 
 def vergleiche(modell: str) -> dict:
-    from agent.llm import erstelle_llm
-    from agent.nodes.guard import ist_inhaltsfilter
+    from agent.llm import make_llm
 
-    llm = erstelle_llm(modell)          # gleiche Einstellungen wie im Agenten (.env)
+    llm = make_llm(modell)          # gleiche Einstellungen wie im Agenten
     zeilen = []
     for name, aufruf, pruefung in _faelle():
         with get_usage_metadata_callback() as usage:
