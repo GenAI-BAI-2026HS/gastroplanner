@@ -15,13 +15,16 @@ Zwei Fehlerarten, zwei Antworten:
   eskaliert. Die Schleife ist damit auf genau einen Fallback begrenzt.
 """
 import time
+from datetime import date, timedelta
 
 import config
 from agent import backends
 from agent.mcp_client import MCPToolError
-from tools.reservations import reserved_per_shift
+from agent.nodes import supervisor
+from tools.reservations import als_anlaesse, reserved_per_shift
 
 DAYS = config.HORIZON_DAYS
+WETTER_TAGE = 16        # Open-Meteo: Prognose für heute und die nächsten 15 Tage
 MAX_VERSUCHE = 3        # 1 Versuch + 2 Wiederholungen
 WARTEZEIT_S = 1.0       # 1 s, dann 2 s (in Tests auf 0 gesetzt)
 
@@ -45,9 +48,23 @@ def mit_wiederholung(fn, *args):
             time.sleep(WARTEZEIT_S * versuch)
 
 
+def wetter_bis() -> date:
+    """Letzter Tag, für den Open-Meteo eine Prognose liefert (heute + 15 Tage)."""
+    return supervisor.heute() + timedelta(days=WETTER_TAGE - 1)
+
+
 def context(state):
+    """Wetter und Kalender holen.
+
+    Liegt die Woche ganz oder teilweise hinter dem Wetterhorizont, wird das Wetter gar nicht
+    abgefragt (Open-Meteo lehnt das ab) und kein Wetter erfunden: weather=None, forecast
+    nimmt dann direkt die Ersatzprognose aus dem Wochentagsmittel, die kein Wetter braucht.
+    """
+    ende = date.fromisoformat(state["start_date"]) + timedelta(days=DAYS - 1)
+    ohne_wetter = not backends.use_fixtures() and ende > wetter_bis()
     try:
-        weather, w1 = mit_wiederholung(backends.get_weather, state["start_date"], DAYS)
+        weather, w1 = (None, 0) if ohne_wetter else \
+            mit_wiederholung(backends.get_weather, state["start_date"], DAYS)
         calendar, w2 = mit_wiederholung(backends.get_calendar, state["start_date"], DAYS)
     except VORUEBERGEHEND as e:  # API weg → nie Werte erfinden (B2), an den Menschen eskalieren
         return {"escalation": f"Wetter oder Kalender nach {MAX_VERSUCHE} Versuchen "
@@ -59,6 +76,9 @@ def context(state):
 
 
 def forecast(state):
+    if (state.get("context") or {}).get("weather", []) is None:
+        return _wochentagsmittel(state, f"Die Wetterprognose reicht erst bis "
+                                        f"{wetter_bis():%d.%m.%Y}, die Regression braucht Wetterdaten")
     try:
         prognose, w = mit_wiederholung(backends.forecast_guests, state["start_date"], DAYS)
     except Exception as e:
@@ -74,6 +94,10 @@ def plausibility(state):
 def fallback(state):
     """Ersatzprognose aus dem Wochentagsmittel, wenn die Regression unplausibel ist."""
     grund = "Regression unplausibel: " + "; ".join(state["plausibility"].get("issues") or ["?"])
+    return _wochentagsmittel(state, grund)
+
+
+def _wochentagsmittel(state, grund: str) -> dict:
     calendar = (state.get("context") or {}).get("calendar")
     open_dates = [c["date"] for c in calendar if c.get("is_open")] if calendar else None
     try:
@@ -90,11 +114,13 @@ def staffing(state):
     Korrekturen aus diesem Lauf. Gespeichert wird erst nach der Freigabe (nodes/memory.py).
 
     Reservationen (Tabelle reservations) im Planungshorizont werden pro Tag und Schicht
-    summiert und wie Anlässe zur Prognose addiert. Ins State kommen nur die Summen, keine
-    Namen oder Telefonnummern.
+    summiert. Nur Reservationen über 5 Personen werden wie Anlässe zur Prognose addiert;
+    kleinere sind in der Prognose enthalten (config.RESERVATION_ZUSATZ_AB). Ins State kommen
+    nur die Summen, keine Namen oder Telefonnummern.
     """
     corrections = backends.get_corrections() + list(state.get("pending_corrections", []))
     reservations = reserved_per_shift(backends.get_reservations(state["start_date"], DAYS))
     plan = backends.calculate_staffing(state["forecast"],
-                                       state.get("events", []) + reservations, corrections)
+                                       state.get("events", []) + als_anlaesse(reservations),
+                                       corrections)
     return {"staffing": plan, "corrections": corrections, "reservations": reservations}

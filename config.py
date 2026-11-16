@@ -29,6 +29,11 @@ MIN_KUECHE = {"morgen": 2, "nachmittag": 1}    # P-02 / P-03
 ABWASCH_THRESHOLD = 100                        # P-04: ab 100 Gästen 2 Personen
 MIN_ABWASCH = 1                                # P-04
 
+# --- Reservationen -------------------------------------------------------------
+# Reservationen über 5 Personen werden zusätzlich zur Prognose eingeplant. Kleinere
+# Reservationen sind in der Prognose enthalten (normale Gäste), werden aber angezeigt.
+RESERVATION_ZUSATZ_AB = 6
+
 # --- Pfade -------------------------------------------------------------------
 DB_PATH = ROOT / "data" / "restaurant.db"              # history, approved_plans, corrections
 CHECKPOINT_DB_PATH = ROOT / "data" / "checkpoints.db"  # LangGraph-Checkpointer (nicht committen)

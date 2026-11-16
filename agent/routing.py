@@ -30,6 +30,8 @@ def route_intent(state) -> str:
 def route_after_reservation(state) -> str:
     if state.get("escalation"):
         return "escalate"
+    if state.get("reservation_vorhanden"):
+        return "end"                               # schon im System, nichts neu erfassen
     if (state.get("pending_reservation") or {}).get("vollstaendig"):
         return "reservation_bestaetigung"
     return "reservation_rueckfrage"

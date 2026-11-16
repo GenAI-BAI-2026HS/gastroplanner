@@ -26,7 +26,8 @@ from agent.nodes import supervisor
 from agent.prompts import RESERVATION_PROMPT
 from agent.routing import MAX_RUECKFRAGEN
 from agent.schemas import Reservation
-from tools.reservations import pruefen, schicht_aus_uhrzeit, telefon_normalisieren
+from tools.reservations import (finde_bestehende, ist_zusaetzlich, pruefen, schicht_aus_uhrzeit,
+                                telefon_normalisieren)
 
 PFLICHT = ("name", "telefon", "personen", "datum", "schicht")
 FRAGEN = {
@@ -63,6 +64,19 @@ def reservation(state):
     if "uhrzeit" in fehler:
         r["schicht"] = None
 
+    # Schon im System? Gleicher Tag und Schicht mit gleichem Name oder gleicher Telefonnummer.
+    if r.get("datum") and r.get("schicht"):
+        treffer, kandidaten = finde_bestehende(r, backends.get_reservations(r["datum"], 1))
+        if treffer:
+            return {"pending_reservation": None, "reservation_vorhanden": treffer,
+                    "messages": [AIMessage(f"Diese Reservation ist bereits im System: "
+                                           f"{beschreibung_db(treffer)}. Es wurde nichts neu erfasst.")]}
+        if kandidaten and not r.get("name"):
+            k = kandidaten[0]
+            fehler["hinweis"] = (f"Für diese Schicht gibt es bereits eine Reservation für "
+                                 f"{k['persons']} Personen auf den Namen {k['name']}. Falls es "
+                                 "eine neue Reservation ist:")
+
     if fehlende_felder(r):
         if state.get("reservation_versuche", 0) >= MAX_RUECKFRAGEN:
             return {"pending_reservation": None,
@@ -91,6 +105,20 @@ def beschreibung(r: dict) -> str:
             f"{d:%d.%m.%Y} {r['schicht']}{zeit}, Tel. {r['telefon']}")
 
 
+def beschreibung_db(x: dict) -> str:
+    """Wie beschreibung, für eine Zeile aus der Tabelle reservations."""
+    return beschreibung({"name": x["name"], "personen": x["persons"], "datum": x["date"],
+                         "schicht": x["shift"], "uhrzeit": x.get("time"), "telefon": x["phone"]})
+
+
+def planungshinweis(personen: int) -> str:
+    if ist_zusaetzlich(personen):
+        return ("Da es mehr als 5 Personen sind, wird die Reservation bei der Wochenplanung "
+                "zusätzlich zur Gästeprognose eingeplant.")
+    return ("Reservationen bis 5 Personen sind in der Gästeprognose bereits enthalten; sie "
+            "wird in der Spalte «Reserviert» angezeigt, aber nicht zusätzlich eingeplant.")
+
+
 def reservation_bestaetigung(state):
     r = state["pending_reservation"]
     antwort = interrupt({
@@ -98,6 +126,7 @@ def reservation_bestaetigung(state):
         "reservation": {k: r.get(k) for k in ("name", "telefon", "personen", "datum",
                                               "uhrzeit", "schicht")},
         "frage": f"Soll ich diese Reservation speichern? {beschreibung(r)}",
+        "hinweis": planungshinweis(r["personen"]),
     })
     decision = antwort.get("decision") if isinstance(antwort, dict) else str(antwort)
     if str(decision).strip().lower() in {"speichern", "ja", "ok"}:
@@ -113,6 +142,6 @@ def reservation_speichern(state):
     total = sum(x["persons"] for x in backends.get_reservations(r["datum"], 1)
                 if x["shift"] == r["schicht"])
     text = (f"Reservation gespeichert: {beschreibung(r)}. "
-            f"Reserviert in dieser Schicht total: {total} Personen. Die reservierten Gäste "
-            "werden bei der Wochenplanung zur Gästeprognose addiert.")
+            f"Reserviert in dieser Schicht total: {total} Personen. "
+            f"{planungshinweis(r['personen'])}")
     return {"reservation_id": rid, "pending_reservation": None, "messages": [AIMessage(text)]}

@@ -20,9 +20,10 @@ class Route(BaseModel):
     """Ergebnis des supervisor-Nodes (B4)."""
     intent: Literal["wochenplanung", "anlass", "reservation", "regelfrage", "themenfremd"] = Field(
         description="wochenplanung: Personalplan für eine Woche erstellen. "
-                    "anlass: ein Ereignis mit zusätzlichen Gästen (Firmenlunch, Apéro, Gruppe) melden. "
-                    "reservation: einen Tisch für eine Person oder Gruppe reservieren "
-                    "(mit Name und/oder Telefonnummer der reservierenden Person). "
+                    "anlass: ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb "
+                    "bringt (z. B. Stadtfest, Markt). "
+                    "reservation: bestimmte Gäste (Person, Gruppe, Firma, Familie) kommen an "
+                    "einem Tag; auch nur angedeutet und ohne Name oder Telefonnummer. "
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
     start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "

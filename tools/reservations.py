@@ -117,18 +117,51 @@ def get_reservations(start_date: str | None = None, days: int | None = None,
             for i, n, p, pe, d, s, t in rows]
 
 
+def ist_zusaetzlich(persons: int) -> bool:
+    """Über 5 Personen: zusätzlich zur Prognose. Kleinere sind in der Prognose enthalten."""
+    return int(persons) >= config.RESERVATION_ZUSATZ_AB
+
+
 def reserved_per_shift(reservations: list[dict]) -> list[dict]:
     """Summe der reservierten Personen pro Tag und Schicht, ohne Namen und Telefonnummern.
 
-    Format wie ein Anlass, damit calculate_staffing sie zur Prognose addiert:
-    [{"date": "2026-10-30", "shift": "nachmittag", "persons": 12, "type": "Reservationen"}]
+    persons:      alle reservierten Personen (Anzeige in der Spalte «Reserviert»)
+    persons_zusatz: nur Reservationen über 5 Personen; nur diese addiert die Planung
+    [{"date": "2026-10-30", "shift": "nachmittag", "persons": 12, "persons_zusatz": 8,
+      "type": "Reservationen"}]
     """
-    summe: dict[tuple[str, str], int] = {}
+    summe: dict[tuple[str, str], list[int]] = {}
     for r in reservations:
-        key = (r["date"], r["shift"])
-        summe[key] = summe.get(key, 0) + int(r["persons"])
-    return [{"date": d, "shift": s, "persons": p, "type": "Reservationen"}
-            for (d, s), p in sorted(summe.items())]
+        alle, zusatz = summe.setdefault((r["date"], r["shift"]), [0, 0])
+        p = int(r["persons"])
+        summe[(r["date"], r["shift"])] = [alle + p, zusatz + (p if ist_zusaetzlich(p) else 0)]
+    return [{"date": d, "shift": s, "persons": alle, "persons_zusatz": zusatz,
+             "type": "Reservationen"} for (d, s), (alle, zusatz) in sorted(summe.items())]
+
+
+def als_anlaesse(per_shift: list[dict]) -> list[dict]:
+    """Nur der zusätzliche Teil, im Anlass-Format für calculate_staffing."""
+    return [{"date": x["date"], "shift": x["shift"], "persons": x["persons_zusatz"],
+             "type": "Reservationen über 5 Personen"} for x in per_shift if x["persons_zusatz"]]
+
+
+def finde_bestehende(r: dict, bestehende: list[dict]) -> tuple[dict | None, list[dict]]:
+    """Ist die Reservation schon im System?
+
+    Rückgabe (treffer, kandidaten):
+    - treffer: gleicher Tag und gleiche Schicht und gleicher Name oder gleiche Telefonnummer
+    - kandidaten: gleicher Tag, gleiche Schicht und gleiche Anzahl Personen (Name noch offen)
+    """
+    gleich = [x for x in bestehende if x["date"] == r.get("datum") and x["shift"] == r.get("schicht")]
+    name = (r.get("name") or "").strip().lower()
+    telefon = telefon_normalisieren(r.get("telefon") or "")
+    for x in gleich:
+        if name and (name in x["name"].lower() or x["name"].lower() in name):
+            return x, []
+        if telefon and telefon == x["phone"]:
+            return x, []
+    kandidaten = [x for x in gleich if r.get("personen") == x["persons"]]
+    return None, kandidaten
 
 
 @contextmanager
