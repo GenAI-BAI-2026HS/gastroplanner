@@ -78,8 +78,8 @@ def build_graph(checkpointer=None):
     b.add_conditional_edges("anlass", r.route_after_anlass,
                             ["anlass_rueckfrage", "context", "escalate"])
     b.add_edge("anlass_rueckfrage", "anlass")
-    b.add_conditional_edges("context", r.route_after_step,
-                            {"ok": "forecast", "escalate": "escalate"})
+    b.add_conditional_edges("context", r.route_after_context,
+                            {"ok": "forecast", "escalate": "escalate", "end": END})
     b.add_conditional_edges("forecast", r.route_after_step,
                             {"ok": "plausibility", "escalate": "escalate"})
     b.add_conditional_edges("plausibility", r.route_after_plausibility,

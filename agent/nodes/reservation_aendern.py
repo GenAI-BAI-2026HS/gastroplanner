@@ -20,7 +20,7 @@ from langgraph.types import interrupt
 import config
 from agent import backends, llm
 from agent.nodes import supervisor
-from agent.nodes.reservation import beschreibung
+from agent.nodes.reservation import beschreibung, betrifft_planung, plaene_neu_freigeben
 from agent.prompts import RESERVATION_AENDERN_PROMPT
 from agent.routing import MAX_RUECKFRAGEN
 from agent.schemas import ReservationAenderung
@@ -157,5 +157,8 @@ def reservation_aendern_speichern(state):
         backends.update_reservation(nr, n["name"], n["telefon"], n["personen"], n["datum"],
                                     n["schicht"], n.get("uhrzeit"), n.get("grund"))
         text = f"Reservation Nr. {nr} geändert: {beschreibung(n)}."
-    return {"pending_aenderung": None, "messages": [AIMessage(
-        text + " Die nächste Wochenplanung berücksichtigt den neuen Stand.")]}
+    neu = None if p["aktion"] == "stornieren" else p["neu"]
+    text += " Die nächste Wochenplanung berücksichtigt den neuen Stand."
+    text += plaene_neu_freigeben(betrifft_planung(p["alt"], neu),
+                                 f"Reservation Nr. {nr} {'storniert' if neu is None else 'geändert'}")
+    return {"pending_aenderung": None, "messages": [AIMessage(text)]}

@@ -12,9 +12,7 @@ Command(resume={"decision": "freigeben"}); gespeichert wird dann im commit-Node.
 Die Plantabelle kommt direkt aus dem State (staffing, forecast), nicht aus dem LLM-Text.
 """
 import os
-import sqlite3
 import uuid
-from contextlib import closing
 from datetime import date, datetime
 
 import pandas as pd
@@ -27,6 +25,7 @@ load_dotenv()
 import config  # noqa: E402
 from agent import backends  # noqa: E402
 from agent.graph import build_graph, sqlite_checkpointer  # noqa: E402
+from agent.nodes.reservation import betrifft_planung, plaene_neu_freigeben  # noqa: E402
 from agent.state import initial_state  # noqa: E402
 
 WOCHENTAGE = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -54,6 +53,9 @@ def neue_sitzung() -> None:
     st.session_state.thread_id = str(uuid.uuid4())
     st.session_state.verlauf = []          # [{"role", "content", "quellen", "plan"}]
     st.session_state.offen = None          # Payload des interrupt (Freigabe oder Rückfrage)
+    st.session_state.res_ansicht = False   # zurück zur Startseite mit Chat und Beispielen
+    st.session_state.plan_ansicht = False
+    st.session_state.res_bearbeiten = None
 
 
 if "thread_id" not in st.session_state:
@@ -290,8 +292,12 @@ def datum_text(iso: str) -> str:
 def reservationen_ansicht() -> None:
     """Alle kommenden (pro Zeile bearbeitbar) oder vergangenen Reservationen."""
     vergangen = st.session_state.res_vergangen
-    kopf, umschalten, schliessen = st.columns([3, 2, 1])
+    kopf, hinzufuegen, umschalten, schliessen = st.columns([3, 2, 2, 1])
     kopf.subheader("Vergangene Reservationen" if vergangen else "Kommende Reservationen")
+    if hinzufuegen.button("Reservation hinzufügen", type="primary", width="stretch",
+                          key="res_hinzufuegen"):
+        neue_sitzung()
+        st.rerun()
     if umschalten.button("Kommende anzeigen" if vergangen else "Vergangene Reservationen anzeigen",
                          width="stretch", key="res_umschalten"):
         st.session_state.res_vergangen = not vergangen
@@ -366,10 +372,11 @@ def reservation_formular(x: dict) -> None:
         st.rerun()
     if not speichern:
         return
+    alt = {"datum": x["date"], "schicht": x["shift"], "personen": int(x["persons"])}
     if storno:
         backends.delete_reservation(rid)
         st.session_state.res_bearbeiten = None
-        st.session_state.res_meldung = f"Reservation Nr. {rid} ({x['name']}) storniert."
+        st.session_state.res_meldung = f"Reservation Nr. {rid} ({x['name']}) storniert." +             plaene_neu_freigeben(betrifft_planung(alt, None), f"Reservation Nr. {rid} storniert")
         st.rerun()
 
     uhrzeit = zeit.strftime("%H:%M") if zeit else None
@@ -388,8 +395,9 @@ def reservation_formular(x: dict) -> None:
     except ValueError as err:
         st.error(str(err))
         return
+    neu = {"datum": datum.isoformat(), "schicht": schicht, "personen": int(personen)}
     st.session_state.res_bearbeiten = None
-    st.session_state.res_meldung = f"Reservation Nr. {rid} ({name.strip()}) gespeichert."
+    st.session_state.res_meldung = f"Reservation Nr. {rid} ({name.strip()}) gespeichert." +         plaene_neu_freigeben(betrifft_planung(alt, neu), f"Reservation Nr. {rid} geändert")
     st.rerun()
 
 
@@ -399,16 +407,75 @@ def chat_starten(text: str) -> None:
     st.rerun()
 
 
-def freigegebene_plaene() -> pd.DataFrame:
-    if not config.DB_PATH.exists():
-        return pd.DataFrame()
-    with closing(sqlite3.connect(config.DB_PATH)) as con:
-        hat = con.execute("SELECT 1 FROM sqlite_master WHERE name='approved_plans'").fetchone()
-        if not hat:
-            return pd.DataFrame()
-        return pd.read_sql(
-            "SELECT plan_id AS Plan, MIN(date) AS Von, MAX(date) AS Bis, MAX(created_at) AS Freigegeben "
-            "FROM approved_plans GROUP BY plan_id ORDER BY Freigegeben DESC", con)
+def freigegebene_plaene() -> list[dict]:
+    try:
+        return backends.list_approved_plans()
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def woche_text(p: dict) -> str:
+    von, bis = pd.Timestamp(p["von"]), pd.Timestamp(p["bis"])
+    return f"KW {von.isocalendar().week} · {von.strftime('%d.%m.')} – {bis.strftime('%d.%m.%Y')}"
+
+
+def reservierte_gaeste(von: str, bis: str) -> dict[tuple[str, str], int]:
+    """Aktuell reservierte Personen pro (Tag, Schicht) im Zeitraum [von, bis]."""
+    try:
+        tage = (pd.Timestamp(bis) - pd.Timestamp(von)).days + 1
+        liste = backends.get_reservations(von, tage)
+    except Exception:  # noqa: BLE001
+        return {}
+    summe: dict[tuple[str, str], int] = {}
+    for x in liste:
+        summe[(x["date"], x["shift"])] = summe.get((x["date"], x["shift"]), 0) + int(x["persons"])
+    return summe
+
+
+def plaene_ansicht() -> None:
+    """Alle freigegebenen Wochen; aufklappen zeigt den ganzen Plan."""
+    kopf, neu, schliessen = st.columns([5, 2, 1])
+    kopf.subheader("Freigegebene Wochen")
+    if neu.button("Neuen Plan erstellen", type="primary", width="stretch", key="plan_neu"):
+        neue_sitzung()
+        st.rerun()
+    if schliessen.button("Schliessen", width="stretch", key="plan_schliessen"):
+        st.session_state.plan_ansicht = False
+        st.rerun()
+
+    plaene = freigegebene_plaene()
+    if not plaene:
+        st.caption("Noch keine freigegebenen Pläne.")
+        return
+    for p in plaene:
+        if p.get("neu_freigeben"):
+            st.error(f"**Plan erneut freigeben:** {woche_text(p)} (Plan-ID {p['plan_id']}). "
+                     f"Grund: {p.get('grund') or 'Reservationen geändert'}. Klicke auf «Neuen Plan "
+                     f"erstellen» und schreibe «Plane die Woche ab "
+                     f"{pd.Timestamp(p['von']).strftime('%d.%m.')}».", icon="⚠️")
+    st.caption("Woche anklicken, um den ganzen Plan zu sehen. Freigegebene Wochen werden nicht "
+               "neu geplant, ausser sie müssen erneut freigegeben werden.")
+    for p in plaene:
+        freigegeben = p["created_at"][:16].replace("T", " ")
+        status = "  ·  ⚠️ muss neu freigegeben werden" if p.get("neu_freigeben") else ""
+        total = sum(reservierte_gaeste(p["von"], p["bis"]).values())
+        with st.expander(f"{woche_text(p)}  ·  {total} reservierte Gäste  ·  freigegeben "
+                         f"{freigegeben}  ·  Plan-ID {p['plan_id']}{status}"):
+            if p.get("neu_freigeben"):
+                st.warning(f"Muss neu freigegeben werden. Grund: {p.get('grund') or 'unbekannt'}. "
+                           f"Dieser Plan gilt bis zur neuen Freigabe; erstelle dafür einen neuen "
+                           f"Plan für die Woche ab {pd.Timestamp(p['von']).strftime('%d.%m.')}.")
+            zeilen = backends.get_approved_plan(p["plan_id"])
+            reserviert = reservierte_gaeste(p["von"], p["bis"])
+            df = pd.DataFrame([{
+                "Tag": f"{WOCHENTAGE[pd.Timestamp(r['date']).weekday()][:2]} "
+                       f"{pd.Timestamp(r['date']).strftime('%d.%m.')}",
+                "Schicht": r["shift"].capitalize(),
+                "Reserviert": reserviert.get((r["date"], r["shift"]), 0),
+                "Geplant für": r["guests_planned"],
+                "Küche": r["kueche"], "Service": r["service"], "Abwasch": r["abwasch"],
+            } for r in zeilen])
+            zeige_tabelle(df)
 
 
 # --- Seitenleiste ----------------------------------------------------------------------------
@@ -421,16 +488,29 @@ with st.sidebar:
 
     st.subheader("Freigegebene Pläne")
     plaene = freigegebene_plaene()
-    if plaene.empty:
+    if st.button(f"Freigegebene Pläne anzeigen ({len(plaene)})", width="stretch", key="plan_oeffnen",
+                 type="primary" if st.session_state.plan_ansicht else "secondary"):
+        st.session_state.plan_ansicht = not st.session_state.plan_ansicht
+        st.session_state.res_ansicht = False
+        st.rerun()
+    if not plaene:
         st.caption("Noch keine.")
-    for _, plan in plaene.iterrows():
-        st.caption(f"**{plan['Plan']}** · {plan['Von']} bis {plan['Bis']} · freigegeben {plan['Freigegeben'][:16].replace('T', ' ')}")
+    for p in plaene[:3]:
+        st.caption(f"{woche_text(p)} · Plan-ID {p['plan_id']}"
+                   + (" · ⚠️ neu freigeben" if p.get("neu_freigeben") else ""))
+    offen_neu = [p for p in plaene if p.get("neu_freigeben")]
+    if offen_neu:
+        st.warning(f"{len(offen_neu)} Plan/Pläne müssen wegen neuer Reservationen neu "
+                   "freigegeben werden.")
+    if len(plaene) > 3:
+        st.caption(f"… und {len(plaene) - 3} weitere")
 
     st.subheader("Reservationen")
     kommende = reservationen(kommend=True)
     if st.button(f"Alle Reservationen anzeigen ({len(kommende)} kommende)", width="stretch",
                  key="res_oeffnen", type="primary" if st.session_state.res_ansicht else "secondary"):
         st.session_state.res_ansicht = not st.session_state.res_ansicht
+        st.session_state.plan_ansicht = False
         st.session_state.res_vergangen = False
         st.rerun()
     if not kommende:
@@ -460,14 +540,19 @@ with st.sidebar:
 
 
 # --- Hauptbereich ----------------------------------------------------------------------------
+if st.session_state.res_ansicht:           # Reservationsliste ersetzt Chat und Beispiele
+    st.title("Reservationen")
+    reservationen_ansicht()
+    st.stop()
+if st.session_state.plan_ansicht:          # Planliste ersetzt Chat und Beispiele
+    st.title("Freigegebene Pläne")
+    plaene_ansicht()
+    st.stop()
+
 st.title("Personalplanung")
 st.caption("Der Agent plant Küche, Service und Abwasch aus der Gästeprognose plus "
            "Reservationen und erfasst Tischreservationen. Er rechnet nie selbst und "
            "übernimmt einen Plan erst nach deiner Freigabe.")
-
-if st.session_state.res_ansicht:
-    with st.container(border=True):
-        reservationen_ansicht()
 
 if not st.session_state.verlauf and not st.session_state.offen:
     st.markdown("**Beispiele**")

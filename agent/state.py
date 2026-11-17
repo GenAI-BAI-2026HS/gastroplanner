@@ -37,6 +37,7 @@ class AgentState(TypedDict):
     revisions: int                 # Anzahl «anpassen»-Runden
     escalation: str | None         # Grund für Eskalation an den Menschen
     plan_id: str | None            # gesetzt von commit
+    plan_vorhanden: dict | None    # Woche schon freigegeben → kein neuer Plan
     regel_messages: Annotated[list, add_messages]  # Tool-Schleife regelfrage ↔ regel_tools
     pending_reservation: dict | None   # Reservation in Erfassung (Rückfrage oder Bestätigung)
     reservation_versuche: int          # Anzahl Rückfragen bei der Reservation
@@ -63,6 +64,7 @@ def initial_state(user_text: str) -> dict:
         "allowed": None, "pending_event": None, "anlass_versuche": 0,
         "fallback_grund": None, "feedback": None, "pending_corrections": [],
         "hinweis": None, "revisions": 0, "escalation": None, "plan_id": None,
+        "plan_vorhanden": None,
         "pending_reservation": None, "reservation_versuche": 0, "reservation_id": None,
         "reservation_vorhanden": None, "reservation_abgelehnt": None,
         "reservation_aus_anpassung": False, "pending_aenderung": None, "aenderung_versuche": 0,

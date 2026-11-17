@@ -2,6 +2,7 @@
 
 Die Datenbank ist pro Test eine eigene temporäre Datei (conftest.py setzt config.DB_PATH).
 """
+from tests.conftest import plaene_loeschen
 import pytest
 from langgraph.types import Command
 
@@ -76,6 +77,7 @@ def test_graph_speichert_erst_nach_freigabe_in_tabelle(fake_llm, run, echtes_mem
     graph.invoke(Command(resume={"decision": "anpassen", "feedback": "Freitag +1 Service"}), cfg)
     assert memory.get_corrections() == []                      # vor Freigabe leer
     graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+    plaene_loeschen()                      # sonst gilt die Woche als freigegeben (kein neuer Plan)
     assert len(memory.get_corrections()) == 1                  # nach Freigabe gespeichert
 
     _, _, result = run("Plane die Woche")                      # neues Gespräch

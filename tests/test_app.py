@@ -87,6 +87,28 @@ def test_reservationsansicht_kommend_und_vergangen(app):
     assert not app.session_state.res_ansicht
 
 
+def test_reservationsansicht_ohne_chat_und_hinzufuegen(app):
+    _button(app, "Alle Reservationen anzeigen (0 kommende)").click().run()
+    assert not app.exception
+    assert len(app.chat_input) == 0
+    assert "Plane die nächste Woche" not in [b.label for b in app.button]
+
+    _button(app, "Reservation hinzufügen").click().run()
+    assert not app.exception
+    assert not app.session_state.res_ansicht
+    assert len(app.chat_input) == 1
+    assert "Plane die nächste Woche" in [b.label for b in app.button]   # wie «Neues Gespräch»
+    assert app.session_state.verlauf == []
+
+
+def test_neues_gespraech_schliesst_reservationsansicht(app):
+    _button(app, "Alle Reservationen anzeigen (0 kommende)").click().run()
+    _button(app, "Neues Gespräch").click().run()
+    assert not app.exception
+    assert not app.session_state.res_ansicht
+    assert len(app.chat_input) == 1
+
+
 def test_reservation_ueber_stift_bearbeiten(app):
     from datetime import date, timedelta
     from tools import reservations as res
@@ -111,6 +133,29 @@ def test_reservation_ueber_stift_bearbeiten(app):
     assert app.session_state.res_bearbeiten is None
 
 
+def test_reservation_verschieben_verlangt_neue_freigabe(app):
+    from datetime import date, timedelta
+    from tools import reservations as res
+    from tools.plans import list_approved_plans, save_approved_plan
+    tag = date.today() + timedelta(days=2)
+    while tag.weekday() not in config.OPEN_WEEKDAYS:
+        tag += timedelta(days=1)
+    ziel = tag + timedelta(days=14)
+    while ziel.weekday() not in config.OPEN_WEEKDAYS:
+        ziel += timedelta(days=1)
+    save_approved_plan([{"date": ziel.isoformat(), "shift": "morgen", "kueche": 2, "service": 3,
+                         "abwasch": 1, "guests_planned": 80}])
+    rid = res.save_reservation("Test", "0791234567", 15, tag.isoformat(), "morgen")
+    app.run()
+    _button(app, "Alle Reservationen anzeigen (1 kommende)").click().run()
+    next(b for b in app.button if b.key == f"res_edit_{rid}").click().run()
+    app.date_input(key=f"res_datum_{rid}").set_value(ziel)
+    _button(app, "Speichern").click().run()
+    assert not app.exception
+    assert list_approved_plans()[0]["neu_freigeben"]
+    assert any("muss neu freigegeben werden" in m.value for m in app.success)
+
+
 def test_reservation_bearbeiten_ungueltige_nummer(app):
     from datetime import date, timedelta
     from tools import reservations as res
@@ -125,6 +170,39 @@ def test_reservation_bearbeiten_ungueltige_nummer(app):
     _button(app, "Speichern").click().run()
     assert app.error
     assert res.get_reservation(rid)["phone"] == "0791234567"
+
+
+def test_freigegebene_plaene_ansicht(app):
+    from tools.plans import save_approved_plan
+    plan_id = save_approved_plan([
+        {"date": "2026-10-26", "shift": "morgen", "kueche": 2, "service": 3, "abwasch": 1,
+         "guests_planned": 80},
+        {"date": "2026-11-01", "shift": "nachmittag", "kueche": 3, "service": 4, "abwasch": 1,
+         "guests_planned": 120}])
+    app.run()
+    _button(app, "Freigegebene Pläne anzeigen (1)").click().run()
+    assert not app.exception
+    assert app.session_state.plan_ansicht
+    assert len(app.chat_input) == 0
+    assert len(app.expander) == 1 and plan_id in app.expander[0].label
+    assert app.dataframe[0].value["Geplant für"].tolist() == [80, 120]
+    assert app.dataframe[0].value["Reserviert"].tolist() == [0, 0]
+    assert "0 reservierte Gäste" in app.expander[0].label
+
+    from tools import reservations as res
+    from tools.plans import plan_ungueltig_machen
+    res.save_reservation("Meier", "0791234567", 25, "2026-11-01", "nachmittag")
+    plan_ungueltig_machen("2026-10-30", "Neue Reservation Nr. 7")
+    app.run()
+    assert app.dataframe[0].value["Reserviert"].tolist() == [0, 25]
+    assert "25 reservierte Gäste" in app.expander[0].label
+    assert any("Plan erneut freigeben" in e.value for e in app.error)
+    assert "muss neu freigegeben werden" in app.expander[0].label
+    assert any("Neue Reservation Nr. 7" in w.value for w in app.warning)
+
+    _button(app, "Neuen Plan erstellen").click().run()
+    assert not app.session_state.plan_ansicht
+    assert len(app.chat_input) == 1
 
 
 def test_ablehnen_speichert_nichts(app):

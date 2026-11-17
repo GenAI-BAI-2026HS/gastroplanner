@@ -9,7 +9,7 @@ from agent import backends
 from agent.graph import build_graph
 from agent.schemas import Anlass, Guard, Korrektur, Route
 from agent.state import initial_state
-from tests.conftest import FakeLLM
+from tests.conftest import FakeLLM, plaene_loeschen
 from tools.plans import count_approved_rows
 
 OK = Guard(erlaubt=True, grund="Personalplanung")
@@ -54,6 +54,40 @@ def test_freigeben_speichert_plan(fake_llm, run):
     assert result["plan_id"]
     assert count_approved_rows() == 12
     assert "freigegeben" in result["messages"][-1].content
+
+
+def test_freigegebene_woche_wird_nicht_neu_geplant(fake_llm, run):
+    fake_llm(Guard=OK, Route=WOCHE)
+    graph, cfg, _ = run("Plane die nächste Woche")
+    graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+
+    _, _, result = run("Plane die nächste Woche")              # gleiche Woche, neuer Thread
+    assert "__interrupt__" not in result
+    assert result["plan_vorhanden"]
+    assert "bereits einen freigegebenen Plan" in result["messages"][-1].content
+    assert count_approved_rows() == 12                         # nichts dazugekommen
+
+
+def test_neue_reservation_verlangt_neue_freigabe(fake_llm, run):
+    from tools import plans
+    fake_llm(Guard=OK, Route=WOCHE)
+    graph, cfg, _ = run("Plane die nächste Woche")
+    graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+    alt = plans.list_approved_plans()[0]["plan_id"]
+
+    betroffen = plans.plan_ungueltig_machen("2026-10-30", "Neue Reservation Nr. 1")
+    assert [p["plan_id"] for p in betroffen] == [alt]
+    assert plans.list_approved_plans()[0]["neu_freigeben"]
+    assert plans.plan_ungueltig_machen("2026-10-30", "nochmals") == []   # schon markiert
+    assert plans.plan_ungueltig_machen("2026-11-10", "andere Woche") == []
+
+    graph, cfg, result = run("Plane die nächste Woche")       # Woche wieder planbar
+    assert interrupt_value(result)["typ"] == "freigabe"
+    graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+    liste = plans.list_approved_plans()
+    assert len(liste) == 1 and liste[0]["plan_id"] != alt     # neuer Plan ersetzt den alten
+    assert not liste[0]["neu_freigeben"]
+    assert count_approved_rows() == 12
 
 
 def test_ablehnen_speichert_nichts(fake_llm, run):
@@ -122,6 +156,7 @@ def test_freigegebene_korrektur_gilt_im_naechsten_lauf(fake_llm, run):
     vorher = service_freitag_nachmittag(interrupt_value(result)["plan"])
     graph.invoke(Command(resume={"decision": "anpassen", "feedback": "Freitag Nachmittag +1 Service"}), cfg)
     graph.invoke(Command(resume={"decision": "freigeben"}), cfg)
+    plaene_loeschen()                      # sonst gilt die Woche als freigegeben (kein neuer Plan)
 
     _, _, result = run("Plane die Woche")                      # neuer Thread
     payload = interrupt_value(result)
