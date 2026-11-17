@@ -15,7 +15,7 @@ import os
 import sqlite3
 import uuid
 from contextlib import closing
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
@@ -60,6 +60,7 @@ if "thread_id" not in st.session_state:
     neue_sitzung()
 st.session_state.setdefault("res_ansicht", False)    # Reservationsliste im Hauptbereich offen
 st.session_state.setdefault("res_vergangen", False)  # vergangene statt kommende anzeigen
+st.session_state.setdefault("res_bearbeiten", None)  # ID der Reservation im Bearbeitungsformular
 
 
 def run_config() -> dict:
@@ -278,53 +279,118 @@ def reservationen(kommend: bool = True) -> list[dict]:
         return []
 
 
+RES_SPALTEN = [2, 1, 1, 2, 2, 2, 1]
+
+
+def datum_text(iso: str) -> str:
+    d = pd.Timestamp(iso)
+    return f"{WOCHENTAGE[d.weekday()][:2]} {d.strftime('%d.%m.%Y')}"
+
+
 def reservationen_ansicht() -> None:
-    """Alle kommenden (bearbeitbar über den Chatbot) oder vergangenen Reservationen."""
+    """Alle kommenden (pro Zeile bearbeitbar) oder vergangenen Reservationen."""
     vergangen = st.session_state.res_vergangen
     kopf, umschalten, schliessen = st.columns([3, 2, 1])
     kopf.subheader("Vergangene Reservationen" if vergangen else "Kommende Reservationen")
     if umschalten.button("Kommende anzeigen" if vergangen else "Vergangene Reservationen anzeigen",
                          width="stretch", key="res_umschalten"):
         st.session_state.res_vergangen = not vergangen
+        st.session_state.res_bearbeiten = None
         st.rerun()
     if schliessen.button("Schliessen", width="stretch", key="res_schliessen"):
         st.session_state.res_ansicht = False
+        st.session_state.res_bearbeiten = None
         st.rerun()
+
+    if meldung := st.session_state.pop("res_meldung", None):
+        st.success(meldung)
 
     liste = reservationen(kommend=not vergangen)
     if not liste:
         st.caption("Keine vergangenen Reservationen." if vergangen else "Keine kommenden Reservationen.")
         return
-    df = pd.DataFrame([{
-        "Nr.": x["id"],
-        "Datum": f"{WOCHENTAGE[pd.Timestamp(x['date']).weekday()][:2]} "
-                 f"{pd.Timestamp(x['date']).strftime('%d.%m.%Y')}",
-        "Zeit": x["time"] or x["shift"].capitalize(), "Name": x["name"],
-        "Grund": x.get("occasion") or "–", "Personen": x["persons"], "Telefon": x["phone"],
-    } for x in liste])
     if vergangen:
-        st.dataframe(df, hide_index=True, width="stretch")
+        st.dataframe(pd.DataFrame([{
+            "Datum": datum_text(x["date"]), "Uhrzeit": x["time"] or x["shift"].capitalize(),
+            "Personen": x["persons"], "Anlass": x.get("occasion") or "–",
+            "Name": x["name"], "Tel. Nr.": x["phone"],
+        } for x in liste]), hide_index=True, width="stretch")
         return
 
-    auswahl = st.dataframe(df, hide_index=True, width="stretch", on_select="rerun",
-                           selection_mode="single-row", key="res_tabelle")
-    zeilen = auswahl.selection.rows if auswahl else []
-    if not zeilen:
-        st.caption("Zeile anklicken, um die Reservation mit dem Chatbot zu bearbeiten oder zu "
-                   "stornieren. Oder direkt im Chat, z. B. «Verschiebe Reservation Nr. 3 auf "
-                   "Donnerstag 12 Uhr».")
+    for spalte, titel in zip(st.columns(RES_SPALTEN),
+                             ["Datum", "Uhrzeit", "Personen", "Anlass", "Name", "Tel. Nr.", ""]):
+        spalte.markdown(f"**{titel}**")
+    for x in liste:
+        c = st.columns(RES_SPALTEN, vertical_alignment="center")
+        c[0].write(datum_text(x["date"]))
+        c[1].write(x["time"] or x["shift"].capitalize())
+        c[2].write(str(x["persons"]))
+        c[3].write(x.get("occasion") or "–")
+        c[4].write(x["name"])
+        c[5].write(x["phone"])
+        offen = st.session_state.res_bearbeiten == x["id"]
+        if c[6].button("✏️", key=f"res_edit_{x['id']}", help="Reservation bearbeiten",
+                       type="primary" if offen else "secondary"):
+            st.session_state.res_bearbeiten = None if offen else x["id"]
+            st.rerun()
+        if offen:
+            reservation_formular(x)
+
+
+def reservation_formular(x: dict) -> None:
+    """Formular zum Bearbeiten oder Stornieren einer Reservation. Prüft wie der Agent."""
+    from tools.reservations import pruefen, schicht_aus_uhrzeit, telefon_normalisieren
+
+    rid = x["id"]
+    with st.form(f"res_form_{rid}", border=True):
+        st.markdown(f"**Reservation Nr. {rid} bearbeiten**")
+        a, b, c = st.columns(3)
+        datum = a.date_input("Datum", value=date.fromisoformat(x["date"]), format="DD.MM.YYYY",
+                             key=f"res_datum_{rid}")
+        zeit_alt = datetime.strptime(x["time"], "%H:%M").time() if x["time"] else None
+        zeit = b.time_input("Uhrzeit", value=zeit_alt, step=900, key=f"res_zeit_{rid}")
+        personen = c.number_input("Anzahl Personen", min_value=config.RESERVATION_MIN_PERSONEN,
+                                  max_value=config.CAPACITY_PER_SHIFT, step=1,
+                                  value=int(x["persons"]), key=f"res_personen_{rid}")
+        d, e, f = st.columns(3)
+        anlass = d.text_input("Anlass", value=x.get("occasion") or "", key=f"res_anlass_{rid}")
+        name = e.text_input("Name", value=x["name"], key=f"res_name_{rid}")
+        telefon = f.text_input("Tel. Nr.", value=x["phone"], key=f"res_telefon_{rid}")
+        storno = st.checkbox("Reservation stornieren", key=f"res_storno_{rid}")
+        s1, s2 = st.columns(2)
+        speichern = s1.form_submit_button("Speichern", type="primary", width="stretch")
+        abbrechen = s2.form_submit_button("Abbrechen", width="stretch")
+
+    if abbrechen:
+        st.session_state.res_bearbeiten = None
+        st.rerun()
+    if not speichern:
         return
-    x = liste[zeilen[0]]
-    gesperrt = bool(st.session_state.offen and st.session_state.offen.get("typ") != "rueckfrage")
-    a, b = st.columns(2)
-    beschrieb = f"Nr. {x['id']} ({x['name']}, {pd.Timestamp(x['date']).strftime('%d.%m.%Y')})"
-    if a.button(f"Nr. {x['id']} mit dem Chatbot bearbeiten", type="primary", width="stretch",
-                disabled=gesperrt, key="res_bearbeiten"):
-        chat_starten(f"Ich möchte die Reservation {beschrieb} bearbeiten.")
-    if b.button(f"Nr. {x['id']} stornieren", width="stretch", disabled=gesperrt, key="res_stornieren"):
-        chat_starten(f"Bitte storniere die Reservation {beschrieb}.")
-    if gesperrt:
-        st.caption("Bitte zuerst die offene Freigabe oder Bestätigung im Chat abschliessen.")
+    if storno:
+        backends.delete_reservation(rid)
+        st.session_state.res_bearbeiten = None
+        st.session_state.res_meldung = f"Reservation Nr. {rid} ({x['name']}) storniert."
+        st.rerun()
+
+    uhrzeit = zeit.strftime("%H:%M") if zeit else None
+    schicht = schicht_aus_uhrzeit(uhrzeit) if uhrzeit else x["shift"]
+    fehler = pruefen({"datum": datum.isoformat(), "uhrzeit": uhrzeit, "telefon": telefon,
+                      "personen": int(personen), "schicht": schicht}, date.today())
+    if not name.strip():
+        fehler["name"] = "Name fehlt."
+    if fehler:
+        for text in fehler.values():
+            st.error(text)
+        return
+    try:
+        backends.update_reservation(rid, name.strip(), telefon_normalisieren(telefon), int(personen),
+                                    datum.isoformat(), schicht, uhrzeit, anlass)
+    except ValueError as err:
+        st.error(str(err))
+        return
+    st.session_state.res_bearbeiten = None
+    st.session_state.res_meldung = f"Reservation Nr. {rid} ({name.strip()}) gespeichert."
+    st.rerun()
 
 
 def chat_starten(text: str) -> None:
