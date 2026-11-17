@@ -23,6 +23,12 @@ def test_route_after_anlass():
     assert r.route_after_anlass({"pending_event": None, "escalation": "x"}) == "escalate"
 
 
+def test_route_after_context():
+    assert r.route_after_context({"escalation": None}) == "ok"
+    assert r.route_after_context({"plan_vorhanden": {"plan_id": "x"}}) == "end"
+    assert r.route_after_context({"escalation": "API weg"}) == "escalate"
+
+
 def test_route_after_step():
     assert r.route_after_step({"escalation": None}) == "ok"
     assert r.route_after_step({"escalation": "API weg"}) == "escalate"

@@ -75,6 +75,13 @@ def route_after_anlass(state) -> str:
     return "context"
 
 
+def route_after_context(state) -> str:
+    """Wie route_after_step, zusätzlich: Woche schon freigegeben → Ende ohne neuen Plan."""
+    if state.get("plan_vorhanden"):
+        return "end"
+    return route_after_step(state)
+
+
 def route_after_step(state) -> str:
     """Gemeinsam für context, forecast und fallback: Fehler → Mensch."""
     return "escalate" if state.get("escalation") else "ok"

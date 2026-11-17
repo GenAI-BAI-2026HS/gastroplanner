@@ -12,6 +12,14 @@ from tools import rag
 HEUTE = date(2026, 10, 25)   # Sonntag → nächster Montag = 2026-10-26 (Woche der Fixtures)
 
 
+def plaene_loeschen() -> None:
+    """Freigegebene Pläne entfernen, damit dieselbe Woche im Test nochmals geplant werden kann."""
+    import sqlite3
+    from contextlib import closing
+    with closing(sqlite3.connect(config.DB_PATH)) as con, con:
+        con.execute("DELETE FROM approved_plans")
+
+
 class _Structured:
     def __init__(self, fake, schema):
         self.fake, self.schema = fake, schema

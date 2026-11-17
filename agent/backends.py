@@ -156,6 +156,26 @@ def save_approved_plan(staffing: list[dict]) -> str:
     return real(staffing)
 
 
+def list_approved_plans() -> list[dict]:
+    from tools.plans import list_approved_plans as real
+    return real()
+
+
+def get_approved_plan(plan_id: str) -> list[dict]:
+    from tools.plans import get_approved_plan as real
+    return real(plan_id)
+
+
+def plan_ungueltig_machen(datum: str, grund: str) -> list[dict]:
+    from tools.plans import plan_ungueltig_machen as real
+    return real(datum, grund)
+
+
+def approved_plan_overlapping(start_date: str, days: int) -> dict | None:
+    from tools.plans import approved_plan_overlapping as real
+    return real(start_date, days)
+
+
 # --- Reservationen ------------------------------------------------------------------
 # Auch im Fixture-Modus echt (SQLite): Tests verwenden eine temporäre Datenbank.
 def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str,

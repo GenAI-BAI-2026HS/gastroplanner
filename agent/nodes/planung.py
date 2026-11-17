@@ -17,6 +17,8 @@ Zwei Fehlerarten, zwei Antworten:
 import time
 from datetime import date, timedelta
 
+from langchain_core.messages import AIMessage
+
 import config
 from agent import backends
 from agent.mcp_client import MCPToolError
@@ -56,10 +58,20 @@ def wetter_bis() -> date:
 def context(state):
     """Wetter und Kalender holen.
 
+    Ist die Woche schon (teilweise) freigegeben, wird nichts geplant: plan_vorhanden wird
+    gesetzt und der Lauf endet (route_after_context).
+
     Liegt die Woche ganz oder teilweise hinter dem Wetterhorizont, wird das Wetter gar nicht
     abgefragt (Open-Meteo lehnt das ab) und kein Wetter erfunden: weather=None, forecast
     nimmt dann direkt die Ersatzprognose aus dem Wochentagsmittel, die kein Wetter braucht.
     """
+    vorhanden = backends.approved_plan_overlapping(state["start_date"], DAYS)
+    if vorhanden:                     # freigegebene Pläne werden nicht neu erstellt
+        von, bis = (date.fromisoformat(vorhanden[k]).strftime("%d.%m.%Y") for k in ("von", "bis"))
+        return {"plan_vorhanden": vorhanden, "messages": [AIMessage(
+            f"Für die Woche vom {von} bis {bis} gibt es bereits einen freigegebenen Plan "
+            f"(Plan-ID {vorhanden['plan_id']}). Er wird nicht neu erstellt. Du findest ihn in "
+            "der Seitenleiste unter «Freigegebene Pläne».")]}
     ende = date.fromisoformat(state["start_date"]) + timedelta(days=DAYS - 1)
     ohne_wetter = not backends.use_fixtures() and ende > wetter_bis()
     try:

@@ -174,6 +174,29 @@ def test_vollstaendige_reservation_erst_nach_bestaetigung_gespeichert(fake_llm, 
     assert "total: 25 Personen" in result["messages"][-1].content
 
 
+def test_reservation_in_freigegebener_woche_verlangt_neue_freigabe(fake_llm, run):
+    from tools.plans import list_approved_plans, save_approved_plan
+    plan_id = save_approved_plan([{"date": d, "shift": "nachmittag", "kueche": 2, "service": 3,
+                                   "abwasch": 1, "guests_planned": 90}
+                                  for d in ("2026-10-26", "2026-10-31")])
+    fake_llm(Guard=OK, Route=RES, Reservation=VOLL)                         # Freitag 30.10.
+    graph, cfg, _ = run("Firmenessen Meier, 25 Personen, Freitag 19 Uhr, 079 123 45 67")
+    result = graph.invoke(Command(resume={"decision": "speichern"}), cfg)
+
+    assert list_approved_plans()[0]["neu_freigeben"]
+    text = result["messages"][-1].content
+    assert f"Plan-ID {plan_id}" in text and "neu freigegeben" in text
+
+
+def test_betrifft_planung():
+    from agent.nodes.reservation import betrifft_planung
+    alt = {"datum": "2026-10-30", "schicht": "morgen", "personen": 20, "name": "A"}
+    assert betrifft_planung(alt, None) == ["2026-10-30"]
+    assert betrifft_planung(alt, {**alt, "name": "B"}) == []
+    assert betrifft_planung(alt, {**alt, "personen": 30}) == ["2026-10-30", "2026-10-30"]
+    assert betrifft_planung(alt, {**alt, "datum": "2026-11-06"}) == ["2026-10-30", "2026-11-06"]
+
+
 def test_unter_zehn_personen_wird_abgelehnt_ohne_name_zu_fragen(fake_llm, run):
     fake = fake_llm(Guard=OK, Route=RES,
                     Reservation=Reservation(personen=6, datum="2026-10-30", uhrzeit="19:00"))

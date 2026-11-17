@@ -154,6 +154,31 @@ def reservation_bestaetigung(state):
             "decision": "verwerfen"}                     # im Zweifel nichts speichern
 
 
+def plaene_neu_freigeben(daten: list[str], grund: str) -> str:
+    """Freigegebene Pläne dieser Tage als «muss neu freigegeben werden» markieren.
+
+    Aufgerufen nach neuer, geänderter oder stornierter Reservation (auch aus der App).
+    Gibt einen Hinweistext für die Antwort zurück (leer, wenn kein Plan betroffen ist).
+    """
+    text = ""
+    for datum in dict.fromkeys(daten):
+        for plan in backends.plan_ungueltig_machen(datum, grund):
+            von, bis = (date.fromisoformat(plan[k]).strftime("%d.%m.%Y") for k in ("von", "bis"))
+            text += (f"\n\nDer freigegebene Plan für die Woche vom {von} bis {bis} (Plan-ID "
+                     f"{plan['plan_id']}) muss neu freigegeben werden. Schreibe dafür z. B. «Plane "
+                     f"die Woche ab {date.fromisoformat(plan['von']).strftime('%d.%m.')}».")
+    return text
+
+
+def betrifft_planung(alt: dict, neu: dict | None) -> list[str]:
+    """Tage, deren Plan sich durch die Änderung ändert (Datum, Schicht oder Personen)."""
+    if neu is None:                                          # storniert
+        return [alt["datum"]]
+    if any(alt.get(k) != neu.get(k) for k in ("datum", "schicht", "personen")):
+        return [alt["datum"], neu["datum"]]
+    return []
+
+
 def reservation_speichern(state):
     r = state["pending_reservation"]
     rid = backends.save_reservation(r["name"], r["telefon"], r["personen"], r["datum"],
@@ -163,5 +188,8 @@ def reservation_speichern(state):
     text = (f"Reservation gespeichert: {beschreibung(r)}. "
             f"Reserviert in dieser Schicht total: {total} Personen. Sie werden bei der "
             "Wochenplanung zusätzlich zur Gästeprognose eingeplant.")
+    text += plaene_neu_freigeben(
+        [r["datum"]], f"Neue Reservation Nr. {rid}: {r['personen']} Personen am {r['datum']} "
+                      f"({r['schicht']})")
     return {"reservation_id": rid, "pending_reservation": None, "hinweis": None,
             "messages": [AIMessage(text)]}
