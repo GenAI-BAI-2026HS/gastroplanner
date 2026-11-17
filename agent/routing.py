@@ -7,6 +7,7 @@ einfachen Dicts testen (tests/test_routing.py).
 Schleifen und ihre Grenzen:
 - anlass ↔ anlass_rueckfrage: MAX_RUECKFRAGEN, danach escalate
 - reservation ↔ reservation_rueckfrage: 2 × MAX_RUECKFRAGEN (6 Pflichtfelder), danach escalate
+- reservation_aendern ↔ reservation_aendern_rueckfrage: MAX_RUECKFRAGEN, danach Ende ohne Änderung
 - approval → korrektur → reservation → … → staffing → … → approval: zählt als «anpassen»-Runde
 - approval → korrektur → staffing → … → approval: MAX_REVISIONS, danach escalate
 - plausibility → fallback → plausibility: höchstens einmal (fallback_grund gesetzt)
@@ -25,7 +26,19 @@ def route_after_guard(state) -> str:
 
 def route_intent(state) -> str:
     return {"wochenplanung": "context", "anlass": "anlass", "reservation": "reservation",
+            "reservation_aendern": "reservation_aendern",
             "regelfrage": "regelfrage"}.get(state.get("intent"), "reject")
+
+
+def route_after_reservation_aendern(state) -> str:
+    p = state.get("pending_aenderung")
+    if p is None:
+        return "end"                               # aufgegeben, nichts geändert
+    return "reservation_aendern_bestaetigung" if p.get("vollstaendig") else "reservation_aendern_rueckfrage"
+
+
+def route_after_reservation_aendern_bestaetigung(state) -> str:
+    return "reservation_aendern_speichern" if state.get("decision") == "speichern" else "end"
 
 
 def _ende_reservation(state) -> str:

@@ -167,3 +167,19 @@ def save_reservation(name: str, phone: str, persons: int, date_: str, shift: str
 def get_reservations(start_date: str | None = None, days: int | None = None) -> list[dict]:
     from tools.reservations import get_reservations as real
     return real(start_date, days)
+
+
+def list_reservations(heute, kommend: bool = True) -> list[dict]:
+    from tools.reservations import list_reservations as real
+    return real(heute, kommend)
+
+
+def update_reservation(reservation_id: int, name: str, phone: str, persons: int, date_: str,
+                       shift: str, time: str | None = None, occasion: str | None = None) -> None:
+    from tools.reservations import update_reservation as real
+    real(reservation_id, name, phone, persons, date_, shift, time, occasion)
+
+
+def delete_reservation(reservation_id: int) -> None:
+    from tools.reservations import delete_reservation as real
+    real(reservation_id)
