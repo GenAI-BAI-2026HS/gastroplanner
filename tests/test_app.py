@@ -77,7 +77,7 @@ def test_reservationsansicht_kommend_und_vergangen(app):
     _button(app, "Alle Reservationen anzeigen (1 kommende)").click().run()
     assert not app.exception
     assert app.session_state.res_ansicht
-    assert "Zukunft" in app.dataframe[0].value["Name"].tolist()
+    assert any(m.value == "Zukunft" for m in app.markdown)
 
     _button(app, "Vergangene Reservationen anzeigen").click().run()
     assert not app.exception
@@ -85,6 +85,46 @@ def test_reservationsansicht_kommend_und_vergangen(app):
 
     _button(app, "Schliessen").click().run()
     assert not app.session_state.res_ansicht
+
+
+def test_reservation_ueber_stift_bearbeiten(app):
+    from datetime import date, timedelta
+    from tools import reservations as res
+    tag = date.today() + timedelta(days=2)
+    while tag.weekday() not in config.OPEN_WEEKDAYS:
+        tag += timedelta(days=1)
+    rid = res.save_reservation("Meier AG", "0791234567", 20, tag.isoformat(), "nachmittag",
+                               time="18:00", occasion="Firmenessen")
+    app.run()
+    _button(app, "Alle Reservationen anzeigen (1 kommende)").click().run()
+    next(b for b in app.button if b.key == f"res_edit_{rid}").click().run()
+    assert not app.exception
+    assert app.session_state.res_bearbeiten == rid
+
+    app.text_input(key=f"res_name_{rid}").set_value("Müller GmbH")
+    app.number_input(key=f"res_personen_{rid}").set_value(30)
+    app.text_input(key=f"res_telefon_{rid}").set_value("079 765 43 21")
+    _button(app, "Speichern").click().run()
+    assert not app.exception
+    x = res.get_reservation(rid)
+    assert (x["name"], x["persons"], x["phone"], x["time"]) == ("Müller GmbH", 30, "0797654321", "18:00")
+    assert app.session_state.res_bearbeiten is None
+
+
+def test_reservation_bearbeiten_ungueltige_nummer(app):
+    from datetime import date, timedelta
+    from tools import reservations as res
+    tag = date.today() + timedelta(days=2)
+    while tag.weekday() not in config.OPEN_WEEKDAYS:
+        tag += timedelta(days=1)
+    rid = res.save_reservation("Meier AG", "0791234567", 20, tag.isoformat(), "morgen")
+    app.run()
+    _button(app, "Alle Reservationen anzeigen (1 kommende)").click().run()
+    next(b for b in app.button if b.key == f"res_edit_{rid}").click().run()
+    app.text_input(key=f"res_telefon_{rid}").set_value("abc")
+    _button(app, "Speichern").click().run()
+    assert app.error
+    assert res.get_reservation(rid)["phone"] == "0791234567"
 
 
 def test_ablehnen_speichert_nichts(app):
