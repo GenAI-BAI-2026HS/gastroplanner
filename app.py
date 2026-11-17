@@ -449,10 +449,12 @@ def plaene_ansicht() -> None:
         return
     for p in plaene:
         if p.get("neu_freigeben"):
-            st.error(f"**Plan erneut freigeben:** {woche_text(p)} (Plan-ID {p['plan_id']}). "
-                     f"Grund: {p.get('grund') or 'Reservationen geändert'}. Klicke auf «Neuen Plan "
-                     f"erstellen» und schreibe «Plane die Woche ab "
-                     f"{pd.Timestamp(p['von']).strftime('%d.%m.')}».", icon="⚠️")
+            if st.button(f"Plan erneut freigeben: {woche_text(p)} (Plan-ID {p['plan_id']}). "
+                         f"Grund: {p.get('grund') or 'Reservationen geändert'}. "
+                         "Hier klicken, um den Plan neu zu erstellen.",
+                         icon="⚠️", type="primary", width="stretch", key=f"plan_neu_{p['plan_id']}"):
+                neue_sitzung()
+                chat_starten(f"Plane die Woche ab {pd.Timestamp(p['von']).strftime('%d.%m.%Y')}")
     st.caption("Woche anklicken, um den ganzen Plan zu sehen. Freigegebene Wochen werden nicht "
                "neu geplant, ausser sie müssen erneut freigegeben werden.")
     for p in plaene:
