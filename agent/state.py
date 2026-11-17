@@ -44,6 +44,8 @@ class AgentState(TypedDict):
     reservation_vorhanden: dict | None  # gleiche Reservation schon im System → nichts erfassen
     reservation_abgelehnt: str | None   # Grund, z. B. unter 10 Personen → keine Reservation
     reservation_aus_anpassung: bool     # Reservation beim «anpassen» → danach neu rechnen
+    pending_aenderung: dict | None      # Änderung/Stornierung einer bestehenden Reservation
+    aenderung_versuche: int             # Anzahl Rückfragen bei der Änderung
     reservations: list[dict]           # Summe reservierter Personen pro Tag/Schicht (ohne Namen)
 
 
@@ -63,7 +65,7 @@ def initial_state(user_text: str) -> dict:
         "hinweis": None, "revisions": 0, "escalation": None, "plan_id": None,
         "pending_reservation": None, "reservation_versuche": 0, "reservation_id": None,
         "reservation_vorhanden": None, "reservation_abgelehnt": None,
-        "reservation_aus_anpassung": False,
+        "reservation_aus_anpassung": False, "pending_aenderung": None, "aenderung_versuche": 0,
         "reservations": [],
         # add_messages hängt an; zum Leeren braucht es RemoveMessage
         "regel_messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES)],

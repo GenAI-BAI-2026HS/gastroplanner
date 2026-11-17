@@ -15,6 +15,7 @@ import os
 import sqlite3
 import uuid
 from contextlib import closing
+from datetime import date
 
 import pandas as pd
 import streamlit as st
@@ -57,6 +58,8 @@ def neue_sitzung() -> None:
 
 if "thread_id" not in st.session_state:
     neue_sitzung()
+st.session_state.setdefault("res_ansicht", False)    # Reservationsliste im Hauptbereich offen
+st.session_state.setdefault("res_vergangen", False)  # vergangene statt kommende anzeigen
 
 
 def run_config() -> dict:
@@ -239,12 +242,95 @@ def reservation_bestaetigen(payload: dict) -> None:
             st.rerun()
 
 
-def kommende_reservationen() -> list[dict]:
+def aenderung_bestaetigen(payload: dict) -> None:
+    """Änderung oder Stornierung einer bestehenden Reservation: vorher/nachher zeigen."""
+    def zeile(titel, r):
+        d = pd.Timestamp(r["datum"])
+        return {"": titel, "Name": r["name"], "Telefon": r["telefon"], "Personen": r["personen"],
+                "Datum": f"{WOCHENTAGE[d.weekday()][:2]} {d.strftime('%d.%m.%Y')}",
+                "Uhrzeit": r.get("uhrzeit") or "–", "Schicht": r["schicht"].capitalize(),
+                "Grund": r.get("grund") or "–"}
+
+    storno = payload["aktion"] == "stornieren"
+    with st.chat_message("assistant"):
+        st.markdown(f"Bitte prüfen Sie die {'Stornierung' if storno else 'Änderung'} der "
+                    f"Reservation Nr. {payload['nr']}. Gespeichert wird erst nach Bestätigung.")
+        zeilen = [zeile("Bisher", payload["vorher"])]
+        if not storno:
+            zeilen.append(zeile("Neu", payload["nachher"]))
+        st.table(pd.DataFrame(zeilen).set_index(""))
+        a, b = st.columns(2)
+        label = "Reservation stornieren" if storno else "Änderung speichern"
+        if a.button(label, type="primary", width="stretch"):
+            st.session_state.verlauf.append({"role": "user", "content": label})
+            ausfuehren(Command(resume={"decision": "speichern"}))
+            st.rerun()
+        if b.button("Abbrechen", width="stretch"):
+            st.session_state.verlauf.append({"role": "user", "content": "Abbrechen"})
+            ausfuehren(Command(resume={"decision": "verwerfen"}))
+            st.rerun()
+
+
+def reservationen(kommend: bool = True) -> list[dict]:
     try:
-        heute = pd.Timestamp.today().strftime("%Y-%m-%d")
-        return [x for x in backends.get_reservations() if x["date"] >= heute]
+        return backends.list_reservations(date.today(), kommend=kommend)
     except Exception:  # noqa: BLE001
         return []
+
+
+def reservationen_ansicht() -> None:
+    """Alle kommenden (bearbeitbar über den Chatbot) oder vergangenen Reservationen."""
+    vergangen = st.session_state.res_vergangen
+    kopf, umschalten, schliessen = st.columns([3, 2, 1])
+    kopf.subheader("Vergangene Reservationen" if vergangen else "Kommende Reservationen")
+    if umschalten.button("Kommende anzeigen" if vergangen else "Vergangene Reservationen anzeigen",
+                         width="stretch", key="res_umschalten"):
+        st.session_state.res_vergangen = not vergangen
+        st.rerun()
+    if schliessen.button("Schliessen", width="stretch", key="res_schliessen"):
+        st.session_state.res_ansicht = False
+        st.rerun()
+
+    liste = reservationen(kommend=not vergangen)
+    if not liste:
+        st.caption("Keine vergangenen Reservationen." if vergangen else "Keine kommenden Reservationen.")
+        return
+    df = pd.DataFrame([{
+        "Nr.": x["id"],
+        "Datum": f"{WOCHENTAGE[pd.Timestamp(x['date']).weekday()][:2]} "
+                 f"{pd.Timestamp(x['date']).strftime('%d.%m.%Y')}",
+        "Zeit": x["time"] or x["shift"].capitalize(), "Name": x["name"],
+        "Grund": x.get("occasion") or "–", "Personen": x["persons"], "Telefon": x["phone"],
+    } for x in liste])
+    if vergangen:
+        st.dataframe(df, hide_index=True, width="stretch")
+        return
+
+    auswahl = st.dataframe(df, hide_index=True, width="stretch", on_select="rerun",
+                           selection_mode="single-row", key="res_tabelle")
+    zeilen = auswahl.selection.rows if auswahl else []
+    if not zeilen:
+        st.caption("Zeile anklicken, um die Reservation mit dem Chatbot zu bearbeiten oder zu "
+                   "stornieren. Oder direkt im Chat, z. B. «Verschiebe Reservation Nr. 3 auf "
+                   "Donnerstag 12 Uhr».")
+        return
+    x = liste[zeilen[0]]
+    gesperrt = bool(st.session_state.offen and st.session_state.offen.get("typ") != "rueckfrage")
+    a, b = st.columns(2)
+    beschrieb = f"Nr. {x['id']} ({x['name']}, {pd.Timestamp(x['date']).strftime('%d.%m.%Y')})"
+    if a.button(f"Nr. {x['id']} mit dem Chatbot bearbeiten", type="primary", width="stretch",
+                disabled=gesperrt, key="res_bearbeiten"):
+        chat_starten(f"Ich möchte die Reservation {beschrieb} bearbeiten.")
+    if b.button(f"Nr. {x['id']} stornieren", width="stretch", disabled=gesperrt, key="res_stornieren"):
+        chat_starten(f"Bitte storniere die Reservation {beschrieb}.")
+    if gesperrt:
+        st.caption("Bitte zuerst die offene Freigabe oder Bestätigung im Chat abschliessen.")
+
+
+def chat_starten(text: str) -> None:
+    st.session_state.verlauf.append({"role": "user", "content": text})
+    ausfuehren(initial_state(text))
+    st.rerun()
 
 
 def freigegebene_plaene() -> pd.DataFrame:
@@ -275,13 +361,20 @@ with st.sidebar:
         st.caption(f"**{plan['Plan']}** · {plan['Von']} bis {plan['Bis']} · freigegeben {plan['Freigegeben'][:16].replace('T', ' ')}")
 
     st.subheader("Reservationen")
-    reservationen = kommende_reservationen()
-    if not reservationen:
+    kommende = reservationen(kommend=True)
+    if st.button(f"Alle Reservationen anzeigen ({len(kommende)} kommende)", width="stretch",
+                 key="res_oeffnen", type="primary" if st.session_state.res_ansicht else "secondary"):
+        st.session_state.res_ansicht = not st.session_state.res_ansicht
+        st.session_state.res_vergangen = False
+        st.rerun()
+    if not kommende:
         st.caption("Keine kommenden.")
-    for x in reservationen:
+    for x in kommende[:3]:
         zeit = x["time"] or x["shift"]
         grund = f" · {x['occasion']}" if x.get("occasion") else ""
-        st.caption(f"{x['date']} {zeit} · **{x['name']}**{grund} · {x['persons']} P. · {x['phone']}")
+        st.caption(f"Nr. {x['id']} · {x['date']} {zeit} · **{x['name']}**{grund} · {x['persons']} P.")
+    if len(kommende) > 3:
+        st.caption(f"… und {len(kommende) - 3} weitere")
 
     st.subheader("Gespeicherte Korrekturen")
     try:
@@ -306,6 +399,10 @@ st.caption("Der Agent plant Küche, Service und Abwasch aus der Gästeprognose p
            "Reservationen und erfasst Tischreservationen. Er rechnet nie selbst und "
            "übernimmt einen Plan erst nach deiner Freigabe.")
 
+if st.session_state.res_ansicht:
+    with st.container(border=True):
+        reservationen_ansicht()
+
 if not st.session_state.verlauf and not st.session_state.offen:
     st.markdown("**Beispiele**")
     for i, beispiel in enumerate(BEISPIELE):
@@ -327,11 +424,13 @@ if offen and offen.get("typ") == "freigabe":
     freigabe(offen)
 if offen and offen.get("typ") == "reservation":
     reservation_bestaetigen(offen)
+if offen and offen.get("typ") == "reservation_aenderung":
+    aenderung_bestaetigen(offen)
 
 platzhalter = ("Antwort auf die Rückfrage …" if offen and offen.get("typ") == "rueckfrage"
                else "Frage oder Auftrag, z. B. «Plane die Woche ab Montag»")
-if text := st.chat_input(platzhalter,
-                         disabled=bool(offen and offen.get("typ") in ("freigabe", "reservation"))):
+if text := st.chat_input(platzhalter, disabled=bool(
+        offen and offen.get("typ") in ("freigabe", "reservation", "reservation_aenderung"))):
     st.session_state.verlauf.append({"role": "user", "content": text})
     if offen and offen.get("typ") == "rueckfrage":
         ausfuehren(Command(resume=text))

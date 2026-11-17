@@ -10,7 +10,7 @@ from langgraph.graph import END, START, StateGraph
 
 from agent import routing as r
 from agent.nodes import (anlass, approval, ende, explain, guard, memory, planung, regelfrage,
-                         reservation, supervisor)
+                         reservation, reservation_aendern, supervisor)
 from agent.state import AgentState
 
 
@@ -29,6 +29,11 @@ def build_graph(checkpointer=None):
     b.add_node("reservation_rueckfrage", reservation.reservation_rueckfrage)      # Mensch
     b.add_node("reservation_bestaetigung", reservation.reservation_bestaetigung)  # Mensch
     b.add_node("reservation_speichern", reservation.reservation_speichern)        # Tool
+    ra = reservation_aendern
+    b.add_node("reservation_aendern", ra.reservation_aendern)                     # LLM + Prüfung
+    b.add_node("reservation_aendern_rueckfrage", ra.reservation_aendern_rueckfrage)      # Mensch
+    b.add_node("reservation_aendern_bestaetigung", ra.reservation_aendern_bestaetigung)  # Mensch
+    b.add_node("reservation_aendern_speichern", ra.reservation_aendern_speichern)        # Tool
     b.add_node("context", planung.context)                 # Tool (MCP)
     b.add_node("forecast", planung.forecast)               # Tool, A
     b.add_node("plausibility", planung.plausibility)       # Regeln, A
@@ -45,7 +50,18 @@ def build_graph(checkpointer=None):
     b.add_edge(START, "guard")
     b.add_conditional_edges("guard", r.route_after_guard, ["supervisor", "reject"])
     b.add_conditional_edges("supervisor", r.route_intent,
-                            ["context", "anlass", "reservation", "regelfrage", "reject"])
+                            ["context", "anlass", "reservation", "reservation_aendern",
+                             "regelfrage", "reject"])
+    b.add_conditional_edges("reservation_aendern", r.route_after_reservation_aendern,
+                            {"reservation_aendern_rueckfrage": "reservation_aendern_rueckfrage",
+                             "reservation_aendern_bestaetigung": "reservation_aendern_bestaetigung",
+                             "end": END})
+    b.add_edge("reservation_aendern_rueckfrage", "reservation_aendern")
+    b.add_conditional_edges("reservation_aendern_bestaetigung",
+                            r.route_after_reservation_aendern_bestaetigung,
+                            {"reservation_aendern_speichern": "reservation_aendern_speichern",
+                             "end": END})
+    b.add_edge("reservation_aendern_speichern", END)
     b.add_conditional_edges("reservation", r.route_after_reservation,
                             {"reservation_rueckfrage": "reservation_rueckfrage",
                              "reservation_bestaetigung": "reservation_bestaetigung",

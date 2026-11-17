@@ -18,12 +18,16 @@ class Guard(BaseModel):
 
 class Route(BaseModel):
     """Ergebnis des supervisor-Nodes (B4)."""
-    intent: Literal["wochenplanung", "anlass", "reservation", "regelfrage", "themenfremd"] = Field(
+    intent: Literal["wochenplanung", "anlass", "reservation", "reservation_aendern",
+                    "regelfrage", "themenfremd"] = Field(
         description="wochenplanung: Personalplan für eine Woche erstellen. "
                     "anlass: ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb "
                     "bringt (z. B. Stadtfest, Markt). "
                     "reservation: bestimmte Gäste (Person, Gruppe, Firma, Familie) kommen an "
                     "einem Tag; auch nur angedeutet und ohne Name oder Telefonnummer. "
+                    "reservation_aendern: eine bestehende Reservation ändern, verschieben, "
+                    "bearbeiten oder stornieren (z. B. «Reservation Nr. 3 auf Donnerstag», "
+                    "«Keller kommt mit 25 statt 20», «storniere Müller»). "
                     "regelfrage: Frage zu Personalregeln, Schichten, Pausen, Betrieb. "
                     "themenfremd: alles andere.")
     start_date: str | None = Field(None, description="Startdatum als YYYY-MM-DD, nur wenn die "
@@ -65,6 +69,27 @@ class Reservation(BaseModel):
     grund: str | None = Field(None, description="Grund bzw. Art des Anlasses, kurz, z. B. "
                               "'Firmenessen', 'Geburtstag', 'Vereinsessen', 'Hochzeit'. "
                               "Null, wenn kein Grund genannt ist.")
+
+
+class ReservationAenderung(BaseModel):
+    """Ergebnis des reservation_aendern-Nodes. Nur Felder füllen, die genannt werden."""
+    reservation_nr: int | None = Field(None, description="Nummer der bestehenden Reservation "
+                                       "(«Nr. 3»), falls genannt. Sonst null.")
+    suchname: str | None = Field(None, description="Name, mit dem die bestehende Reservation "
+                                 "gemeint ist (z. B. 'Keller'), falls keine Nummer genannt ist.")
+    aktion: Literal["aendern", "stornieren"] | None = Field(None, description="stornieren: "
+                                 "Reservation absagen/löschen. aendern: Angaben ändern. "
+                                 "Null, wenn noch unklar ist, was geschehen soll.")
+    personen: int | None = Field(None, description="NEUE Anzahl Personen, nur wenn geändert.")
+    datum: str | None = Field(None, description="NEUES Datum als YYYY-MM-DD, nur wenn geändert. "
+                              "Relative Angaben mit dem heutigen Datum auflösen.")
+    uhrzeit: str | None = Field(None, description="NEUE Uhrzeit als HH:MM, nur wenn geändert.")
+    schicht: Schicht | None = Field(None, description="NEUE Schicht, nur wenn ohne Uhrzeit "
+                                    "geändert (Mittag = morgen, Abend = nachmittag).")
+    grund: str | None = Field(None, description="NEUER Grund des Anlasses, nur wenn geändert.")
+    name: str | None = Field(None, description="NEUER Name der Reservation, nur wenn der Name "
+                             "geändert werden soll (nicht der Suchname).")
+    telefon: str | None = Field(None, description="NEUE Telefonnummer, nur wenn geändert.")
 
 
 class Korrektur(BaseModel):

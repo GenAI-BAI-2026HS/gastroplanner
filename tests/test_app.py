@@ -64,6 +64,29 @@ def test_reservation_erst_nach_bestaetigung_gespeichert(monkeypatch, fake_llm):
     assert "Reservation gespeichert" in at.session_state.verlauf[-1]["content"]
 
 
+def test_reservationsansicht_kommend_und_vergangen(app):
+    from datetime import date, timedelta
+    from tools import reservations as res
+    morgen = date.today() + timedelta(days=1)
+    while morgen.weekday() == 6:                         # kein Sonntag
+        morgen += timedelta(days=1)
+    res.save_reservation("Zukunft", "0791234567", 20, morgen.isoformat(), "morgen", occasion="Firma")
+    res.save_reservation("Vorbei", "0791234567", 12, "2025-01-10", "morgen", occasion="Geburtstag")
+    app.run()
+
+    _button(app, "Alle Reservationen anzeigen (1 kommende)").click().run()
+    assert not app.exception
+    assert app.session_state.res_ansicht
+    assert "Zukunft" in app.dataframe[0].value["Name"].tolist()
+
+    _button(app, "Vergangene Reservationen anzeigen").click().run()
+    assert not app.exception
+    assert app.dataframe[0].value["Name"].tolist() == ["Vorbei"]
+
+    _button(app, "Schliessen").click().run()
+    assert not app.session_state.res_ansicht
+
+
 def test_ablehnen_speichert_nichts(app):
     app.chat_input[0].set_value("Plane die nächste Woche").run()
     _button(app, "Ablehnen").click().run()

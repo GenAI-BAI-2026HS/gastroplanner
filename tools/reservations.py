@@ -129,6 +129,53 @@ def get_reservations(start_date: str | None = None, days: int | None = None,
              "occasion": o} for i, n, p, pe, d, s, t, o in rows]
 
 
+def list_reservations(heute: date, kommend: bool = True,
+                      db_path: Path | str | None = None) -> list[dict]:
+    """Kommende (ab heute, älteste zuerst) oder vergangene (vor heute, neueste zuerst)."""
+    alle = get_reservations(db_path=db_path)
+    tag = heute.isoformat()
+    if kommend:
+        return [x for x in alle if x["date"] >= tag]
+    return sorted((x for x in alle if x["date"] < tag),
+                  key=lambda x: (x["date"], x["shift"], x["time"] or ""), reverse=True)
+
+
+def get_reservation(reservation_id: int, db_path: Path | str | None = None) -> dict | None:
+    return next((x for x in get_reservations(db_path=db_path) if x["id"] == reservation_id), None)
+
+
+def update_reservation(reservation_id: int, name: str, phone: str, persons: int, date_: str,
+                       shift: str, time: str | None = None, occasion: str | None = None,
+                       db_path: Path | str | None = None) -> None:
+    """Überschreibt eine Reservation. Gleiche Prüfungen wie save_reservation."""
+    telefon = telefon_normalisieren(phone)
+    if not (name or "").strip():
+        raise ValueError("Name fehlt")
+    if telefon is None:
+        raise ValueError(f"Ungültige Telefonnummer: {phone}")
+    if shift not in config.SHIFTS:
+        raise ValueError(f"Unbekannte Schicht: {shift}")
+    if not isinstance(persons, int) or not reservierbar(persons):
+        raise ValueError(f"Reservationen erst ab {config.RESERVATION_MIN_PERSONEN} Personen")
+    date.fromisoformat(date_)
+    with _verbinden(db_path) as con:
+        cur = con.execute(
+            "UPDATE reservations SET name=?, phone=?, persons=?, date=?, shift=?, time=?, "
+            "occasion=? WHERE id=?",
+            (name.strip(), telefon, int(persons), date_, shift, time,
+             (occasion or "").strip() or None, int(reservation_id)))
+        if cur.rowcount != 1:
+            raise ValueError(f"Reservation Nr. {reservation_id} gibt es nicht")
+
+
+def delete_reservation(reservation_id: int, db_path: Path | str | None = None) -> None:
+    """Storniert (löscht) eine Reservation."""
+    with _verbinden(db_path) as con:
+        cur = con.execute("DELETE FROM reservations WHERE id=?", (int(reservation_id),))
+        if cur.rowcount != 1:
+            raise ValueError(f"Reservation Nr. {reservation_id} gibt es nicht")
+
+
 def reserved_per_shift(reservations: list[dict]) -> list[dict]:
     """Summe der reservierten Personen pro Tag und Schicht, ohne Namen und Telefonnummern.
 
