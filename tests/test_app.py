@@ -196,10 +196,20 @@ def test_freigegebene_plaene_ansicht(app):
     app.run()
     assert app.dataframe[0].value["Reserviert"].tolist() == [0, 25]
     assert "25 reservierte Gäste" in app.expander[0].label
-    assert any("Plan erneut freigeben" in e.value for e in app.error)
     assert "muss neu freigegeben werden" in app.expander[0].label
     assert any("Neue Reservation Nr. 7" in w.value for w in app.warning)
 
+    warnung = next(b for b in app.button if b.key == f"plan_neu_{plan_id}")
+    assert "Plan erneut freigeben" in warnung.label
+    warnung.click().run()                                     # startet die Planung im Chat
+    assert not app.exception
+    assert not app.session_state.plan_ansicht
+    assert app.session_state.verlauf[0]["content"] == "Plane die Woche ab 26.10.2026"
+    assert app.session_state.offen["typ"] == "freigabe"       # neuer Plan wartet auf Freigabe
+
+
+def test_neuen_plan_erstellen_fuehrt_zum_chat(app):
+    _button(app, "Freigegebene Pläne anzeigen (0)").click().run()
     _button(app, "Neuen Plan erstellen").click().run()
     assert not app.session_state.plan_ansicht
     assert len(app.chat_input) == 1
