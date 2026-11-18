@@ -71,6 +71,7 @@ Automatisch erzeugt: `python -m agent.run --mermaid` schreibt `docs/graph.mmd`, 
 | regel_tools | `ToolNode` (RAG-Suche `regeln_suchen`) | `nodes/regelfrage.py`, `tools/rag.py` |
 | anlass, anlass_rueckfrage | LLM (strukturiert), Mensch | `nodes/anlass.py` |
 | reservation, reservation_rueckfrage, reservation_bestaetigung, reservation_speichern | LLM (strukturiert), Mensch, Tool | `nodes/reservation.py`, `tools/reservations.py` |
+| reservation_aendern, reservation_aendern_rueckfrage, reservation_aendern_bestaetigung, reservation_aendern_speichern | LLM (strukturiert), Mensch, Tool | `nodes/reservation_aendern.py`, `tools/reservations.py` |
 | context, forecast, plausibility, fallback, staffing | Tool, Regeln | `nodes/planung.py` |
 | explain | LLM + RAG | `nodes/explain.py` |
 | approval, commit | Mensch, Tool | `nodes/approval.py` |
@@ -89,6 +90,8 @@ Basis ist der Vertrag aus Abschnitt 5. Ergänzt wurden Felder, die die Router br
 | `pending_event`, `anlass_versuche` | anlass, anlass_rueckfrage | `route_after_anlass` |
 | `pending_reservation`, `reservation_versuche`, `reservation_abgelehnt`, `reservation_vorhanden` | reservation, reservation_rueckfrage | `route_after_reservation` |
 | `reservations` | staffing (Summen pro Tag und Schicht, ohne Namen) | explain |
+| `pending_aenderung`, `aenderung_versuche` | reservation_aendern, reservation_aendern_rueckfrage | `route_after_reservation_aendern` |
+| `plan_vorhanden` | context (Woche schon freigegeben) | `route_after_context` → Ende ohne neuen Plan |
 | `retries` | context, forecast (Wiederholungen bei Datenfehlern) | Trace, Tests |
 | `fallback_grund` | forecast (zurücksetzen), fallback | `route_after_plausibility`, explain, approval (Anzeige) |
 | `feedback` | approval | korrektur |

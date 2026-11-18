@@ -2,7 +2,7 @@
 
 Restaurant-Personalplanungsagent · Generative KI und Agentensysteme · BSc Business Artificial Intelligence · FHNW Olten
 
-Ein LLM-Orchestrator (LangGraph) holt Wetterprognose, Feiertage und Schulferien, lässt ein Regressionsmodell die Gästezahl der nächsten sieben Tage pro Schicht prognostizieren, leitet daraus die Besetzung für Küche, Service und Abwasch ab, begründet sie mit Quellen aus den Personalregeln und übernimmt den Plan erst nach Freigabe durch einen Menschen. Tischreservationen ab 10 Personen nimmt ein eigener Reservationsagent auf; sie fliessen zusätzlich zur Prognose in die Planung ein. Das LLM rechnet nie selbst.
+Ein LLM-Orchestrator (LangGraph) holt Wetterprognose, Feiertage und Schulferien, lässt ein Regressionsmodell die Gästezahl der nächsten sieben Tage pro Schicht prognostizieren, leitet daraus die Besetzung für Küche, Service und Abwasch ab, begründet sie mit Quellen aus den Personalregeln und übernimmt den Plan erst nach Freigabe durch einen Menschen. Tischreservationen ab 10 Personen nimmt ein eigener Reservationsagent auf, ändert oder storniert sie; sie fliessen zusätzlich zur Prognose in die Planung ein. Eine bereits freigegebene Woche wird nicht neu geplant; ändert sich eine Reservation, muss ihr Plan neu freigegeben werden. Das LLM rechnet nie selbst.
 
 **Problem:** Kleine Restaurants planen das Personal meist aus dem Bauchgefühl. Wetter, Feiertage, Schulferien und Gruppenanlässe verändern die Gästezahl aber deutlich; Unterbesetzung kostet Gäste und Nerven, Überbesetzung Lohn. Der Agent macht die Planung nachvollziehbar: Zahlen aus einem getesteten Prognosemodell, Regeln mit Quelle, Entscheid bei der Betriebsleitung.
 
@@ -18,7 +18,7 @@ Ein LLM-Orchestrator (LangGraph) holt Wetterprognose, Feiertage und Schulferien,
 
 ![LangGraph-Graph des Agenten](docs/graph.png)
 
-Gestrichelte Pfeile sind Verzweigungen (`agent/routing.py`), durchgezogene feste Kanten. Das LLM kommt nur in guard, supervisor, anlass, reservation, regelfrage, explain und korrektur vor; alle Zahlen stammen aus Tools. Begründungen: [docs/architektur.md](docs/architektur.md).
+Gestrichelte Pfeile sind Verzweigungen (`agent/routing.py`), durchgezogene feste Kanten. Das LLM kommt nur in guard, supervisor, anlass, reservation, reservation_aendern, regelfrage, explain und korrektur vor; alle Zahlen stammen aus Tools. Begründungen: [docs/architektur.md](docs/architektur.md).
 
 ## Setup
 
@@ -106,7 +106,7 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 |---|---|---|
 | Backtest Prognose (A4), 60 Tage nicht im Training | MAE 2.2 Gäste pro Schicht (8 %) gegenüber 3.7 (13 %) beim Wochentagsmittel, also 40 % weniger Fehler. 89 % der Ist-Werte liegen in der 80 %-Spanne. Unterbesetzte Schichten: 1 %. | [eval/ergebnisse_backtest.md](eval/ergebnisse_backtest.md), [docs/backtest.png](docs/backtest.png) |
 | Regelsuche (C3), 24 Fragen | Hit@3 92 %, Hit@1 67 %, MRR 0.78 (BM25) | [eval/ergebnisse_rag.md](eval/ergebnisse_rag.md) |
-| Agent (C6), 16 Fälle mit echtem LLM (`gpt-6-luna`) | 16/16 richtiges Ergebnis; Absicht 13/13, Anlass 1/1, Reservation 1/1, Quelle 3/3, Zahlen nur aus Tools 7/7. Ø 3.5 s pro Fall. | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Dataset `gastroplanner-testset-v2` |
+| Agent (C6), 16 Fälle mit echtem LLM (`gpt-6-luna`) | 16/16 richtiges Ergebnis; Absicht 13/13, Anlass 1/1, Reservation 1/1, Quelle 3/3, Zahlen nur aus Tools 7/7. Ø 4.0 s pro Fall (Lauf vom 18.11. mit allen Reservationsfunktionen). | [eval/ergebnisse_agent.md](eval/ergebnisse_agent.md), LangSmith-Dataset `gastroplanner-testset-v2` |
 | Modellwahl (B1), 5 gleiche Anfragen an 3 Modelle | Alle 5/5. Gewählt `gpt-6-luna` (auch 16/16 in C6, wenigste Tokens); Alternative `gpt-5.4-mini-new` (schneller); `claude-haiku-5-5` nur mit `temperature=1` und rund dreimal so viele Tokens | [docs/modellwahl.md](docs/modellwahl.md) |
 
 ```bash
