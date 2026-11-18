@@ -16,6 +16,10 @@ graph TD;
 	reservation_rueckfrage(reservation_rueckfrage)
 	reservation_bestaetigung(reservation_bestaetigung)
 	reservation_speichern(reservation_speichern)
+	reservation_aendern(reservation_aendern)
+	reservation_aendern_rueckfrage(reservation_aendern_rueckfrage)
+	reservation_aendern_bestaetigung(reservation_aendern_bestaetigung)
+	reservation_aendern_speichern(reservation_aendern_speichern)
 	context(context)
 	forecast(forecast)
 	plausibility(plausibility)
@@ -38,6 +42,7 @@ graph TD;
 	approval -.-> escalate;
 	approval -.-> korrektur;
 	commit --> memory;
+	context -. &nbsp;end&nbsp; .-> __end__;
 	context -.-> escalate;
 	context -. &nbsp;ok&nbsp; .-> forecast;
 	explain --> approval;
@@ -61,6 +66,12 @@ graph TD;
 	reservation -.-> escalate;
 	reservation -.-> reservation_bestaetigung;
 	reservation -.-> reservation_rueckfrage;
+	reservation_aendern -. &nbsp;end&nbsp; .-> __end__;
+	reservation_aendern -.-> reservation_aendern_bestaetigung;
+	reservation_aendern -.-> reservation_aendern_rueckfrage;
+	reservation_aendern_bestaetigung -. &nbsp;end&nbsp; .-> __end__;
+	reservation_aendern_bestaetigung -.-> reservation_aendern_speichern;
+	reservation_aendern_rueckfrage --> reservation_aendern;
 	reservation_bestaetigung -. &nbsp;end&nbsp; .-> __end__;
 	reservation_bestaetigung -.-> approval;
 	reservation_bestaetigung -.-> reservation_speichern;
@@ -73,9 +84,11 @@ graph TD;
 	supervisor -.-> regelfrage;
 	supervisor -.-> reject;
 	supervisor -.-> reservation;
+	supervisor -.-> reservation_aendern;
 	escalate --> __end__;
 	memory --> __end__;
 	reject --> __end__;
+	reservation_aendern_speichern --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc

@@ -1,6 +1,6 @@
 # Konzept: Restaurant-Personalplanungsagent
 
-Stand: 16.11.2026 · ersetzt das frühere Konzept (Personal- und Einkaufsplanung, siehe `daten/`, `Skizze/`) · Bezug: Projektplan vom 19.10.2026
+Stand: 18.11.2026 · ersetzt das frühere Konzept (Personal- und Einkaufsplanung, siehe `daten/`, `Skizze/`) · Bezug: Projektplan vom 19.10.2026
 
 ## 1. Problem
 
@@ -45,6 +45,8 @@ Ein LLM-Orchestrator holt Wetterprognose, Feiertage und Schulferien, lässt ein 
 | US7 | … eine dauerhafte Korrektur angeben («Freitagnachmittag immer einen Service mehr») | ich sie nicht jede Woche wiederholen muss | C5 Memory |
 | US8 | … bei fehlenden Daten (Wetterdienst nicht erreichbar) informiert werden statt einen erfundenen Plan zu bekommen | ich mich auf den Plan verlassen kann | Eskalation, Fallback |
 | US10 | … eine Tischreservation ab 10 Personen in einem Satz erfassen und bei fehlenden Angaben gefragt werden | reservierte Gäste in der Planung zusätzlich eingeplant sind | Reservationsagent (reservation + Rückfrage + Bestätigung) |
+| US11 | … eine Reservation ändern oder stornieren und vorher/nachher sehen, bevor etwas gespeichert wird | die Planung aktuell bleibt | reservation_aendern + Bestätigung; App-Liste mit Formular |
+| US12 | … freigegebene Pläne ansehen und erfahren, wenn eine Reservation einen Plan veraltet macht | ich den Plan bei Bedarf neu freigebe | App «Freigegebene Pläne», Hinweis «muss neu freigegeben werden» |
 | US9 | … dass der Assistent bei themenfremden oder manipulativen Anfragen ablehnt und nichts über einzelne Mitarbeitende urteilt | das System im Rahmen bleibt | C4 guard |
 
 ## 4. Prozess
@@ -96,4 +98,4 @@ Das vollständige Graph-Bild steht in [graph.png](graph.png) (Quelle: [graph.mmd
 
 Das erste Konzept sah zusätzlich einen Einkaufsplan («Personal- und Einkaufsplan», «Einkaufsbedarf» bei Anlässen) und ein Mehragentensystem vor. Der Projektplan vom 19.10.2026 beschränkt die Lösung auf die Personalplanung, damit der Kern in der verfügbaren Zeit sauber gebaut, getestet und evaluiert werden kann. Einkauf und Lager bleiben eine mögliche Ausbaustufe; die Architektur (Supervisor mit weiteren Pfaden) liesse das zu.
 
-Nach dem ersten Code-Freeze kam als zusätzlicher Pfad ein Reservationsagent dazu (16.11.2026). Seither gilt: Kommen bestimmte Gäste (Firma, Gruppe, Familie), ist es eine Reservation mit Name und Telefonnummer; ein Anlass ist ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb bringt (Markt, Stadtfest). Das Testset wurde entsprechend angepasst und um drei Reservationsfälle ergänzt.
+Nach dem ersten Code-Freeze kam als zusätzlicher Pfad ein Reservationsagent dazu (16.11.2026). Seither gilt: Kommen bestimmte Gäste (Firma, Gruppe, Familie), ist es eine Reservation mit Name und Telefonnummer; ein Anlass ist ein Ereignis ohne buchende Gäste, das allgemein mehr Betrieb bringt (Markt, Stadtfest). Das Testset wurde entsprechend angepasst und um drei Reservationsfälle ergänzt. Am 17.11. kamen das Ändern und Stornieren von Reservationen (Absicht `reservation_aendern`) und die Ansicht freigegebener Pläne dazu; eine freigegebene Woche wird nicht neu geplant. Die Agenten-Evaluation wurde danach wiederholt (18.11.: 16/16). Für «Reservation ändern» gibt es Unit-Tests (`tests/test_reservation_aendern.py`), aber keinen Fall im LLM-Testset.
