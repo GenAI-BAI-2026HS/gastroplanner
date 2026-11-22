@@ -36,7 +36,8 @@ Den `API_KEY` erzeugt jede Person selbst in LiteLLM (Login über den Einladungsl
 ```bash
 streamlit run app.py             # Oberfläche im Browser (Demo)
 python -m agent.run              # derselbe Agent im Terminal
-python -m agent.run --mermaid    # Graph-Bild nach docs/graph.mmd
+python -m agent.run --mermaid    # Graph als Mermaid nach docs/graph.mmd
+python -m agent.run --png        # Graph-Bild nach docs/graph.png (braucht Internet)
 pytest                           # alle Tests, ohne API-Key und ohne Netzwerk
 pytest -m "not mcp"              # ohne die Tests, die den MCP-Server starten
 ```
@@ -46,9 +47,11 @@ Schalter in `.env`: `USE_FIXTURES=1` nutzt die Beispieldaten in `tests/fixtures/
 Beispielanfragen (Demo-Ablauf):
 
 1. «Plane die Woche ab Montag» → Plan mit Gästespanne, Annahmen und Freigabe-Buttons
-2. «Donnerstag haben wir einen Firmenlunch» → Rückfrage nach Personen und Schicht → «40 Personen, mittags» → Besetzung am Donnerstagmorgen steigt
-3. «Wie lang darf eine Schicht höchstens dauern?» → Antwort mit Quelle
-4. Beim Plan «Anpassen: Freitagnachmittag immer einen Service mehr» → neuer Plan → «Freigeben» → Plan und Korrektur erscheinen in der Seitenleiste
+2. «Am Donnerstag ist Stadtfest» → Rückfrage nach Personen und Schicht → «rechne mit 40 Gästen mehr, morgens» → Besetzung am Donnerstagmorgen steigt
+3. «Reservation auf Meier, 12 Personen am Freitag um 12 Uhr» → Rückfrage nach der Telefonnummer → Bestätigung → «Speichern»; die Reservation erscheint in der Seitenleiste. Unter 10 Personen wird nichts erfasst.
+4. «Wie lang darf eine Schicht höchstens dauern?» → Antwort mit Quelle
+5. Beim Plan «Anpassen: Freitagnachmittag immer einen Service mehr» → neuer Plan → «Freigeben» → Plan und Korrektur erscheinen in der Seitenleiste
+6. «Verschiebe die Reservation Meier auf 13 Uhr» → vorher/nachher → «Speichern»; ist die Woche schon freigegeben, wird ihr Plan als «muss neu freigegeben werden» markiert
 
 ## Repository
 
@@ -68,7 +71,8 @@ gastroplanner/
 ├─ planning/staffing.py      # calculate_staffing
 ├─ tools/
 │  ├─ weather.py, calendar_ch.py
-│  ├─ plans.py               # approved_plans (nur vom commit-Node)
+│  ├─ plans.py               # approved_plans (gespeichert nur nach «Freigeben»)
+│  ├─ reservations.py        # Reservationen erfassen, ändern, stornieren, Summen pro Schicht
 │  ├─ rag.py, memory.py
 ├─ mcp_server/server.py      # FastMCP: Wetter + Kalender
 ├─ docs_rag/                 # Regeldokumente für RAG: personalregeln, anlaesse, betrieb
@@ -95,7 +99,8 @@ Alle Funktionen aus Projektplan Abschnitt 5 sind umgesetzt und getestet.
 | `calculate_staffing` | `planning/staffing.py` |
 | `search_rules` (Hybrid: BM25 + optional Embeddings) | `tools/rag.py` |
 | `save_correction`, `get_corrections` | `tools/memory.py` |
-| `save_approved_plan` | `tools/plans.py` |
+| `save_approved_plan`, `approved_plan_overlapping`, `plan_ungueltig_machen` | `tools/plans.py` |
+| `save_reservation`, `update_reservation`, `delete_reservation`, `reserved_per_shift` (Erweiterung nach dem Projektplan) | `tools/reservations.py` |
 | MCP-Server | `mcp_server/server.py` |
 | LangGraph-Orchestrator | `agent/` |
 | Streamlit-Oberfläche | `app.py` |
@@ -125,7 +130,8 @@ python -m eval.modellvergleich MODELL_A MODELL_B
 - **Regelsuche ohne Embeddings nur mit Stichworten.** Zusammengesetzte Wörter und Synonyme findet BM25 schlecht; mit `EMBEDDING_MODEL` läuft die Hybrid-Suche.
 - **Evaluation klein.** 16 selbst geschriebene Testfälle zeigen, dass die Abläufe funktionieren, sind aber keine statistisch belastbare Messung.
 - **Wetter und Kalender werden pro Lauf doppelt abgerufen** (context-Node über MCP und intern in `forecast_guests`).
-- **Kein echtes Schichtsystem.** «Übermitteln» speichert den Plan in einer Tabelle; Namen, Verfügbarkeiten und Arbeitszeitkonten der Mitarbeitenden sind nicht Teil der Lösung.
+- **«Reservation ändern» nicht im LLM-Testset.** Das Ändern und Stornieren ist mit Unit-Tests abgedeckt (`tests/test_reservation_aendern.py`), aber nicht Teil der 16 Fälle mit echtem LLM.
+- **Kein echtes Schichtsystem.** «Freigeben» speichert den Plan in einer Tabelle; Namen, Verfügbarkeiten und Arbeitszeitkonten der Mitarbeitenden sind nicht Teil der Lösung.
 
 ## Früheres Konzept (altes Material)
 
